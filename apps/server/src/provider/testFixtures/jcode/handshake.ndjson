@@ -1,0 +1,11 @@
+{"dir":"in","method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":false,"writeTextFile":false}}}}
+{"dir":"out","result":{"agentCapabilities":{"loadSession":true,"mcpCapabilities":{"http":false,"sse":false},"promptCapabilities":{"audio":false,"embeddedContext":true,"image":true},"sessionCapabilities":{"close":{},"resume":{}}},"agentInfo":{"name":"jcode","title":"Jcode","version":"0.75.5"},"authMethods":[],"protocolVersion":1}}
+{"dir":"in","method":"authenticate","note":"T3 must SKIP this; jcode returns error -32601 Unsupported ACP method: authenticate"}
+{"dir":"out","error":{"code":-32601,"message":"Unsupported ACP method: authenticate"}}
+{"dir":"in","method":"session/new","params":{"cwd":"/Users/aayu","mcpServers":[]}}
+{"dir":"out","result":{"configOptions":[{"category":"model","id":"model","name":"Model","currentValue":"claude-opus-4-8","options":["...model list..."]}],"sessionId":"session_<id>"}}
+{"dir":"out","method":"session/update","params":{"update":{"availableCommands":[{"name":"model"},{"name":"models"}],"sessionUpdate":"..."}}}
+{"dir":"in","method":"session/prompt","params":{"sessionId":"session_<id>","prompt":[{"type":"text","text":"reply with exactly: PONG"}]}}
+{"dir":"out","method":"session/update","params":{"update":{"content":{"text":"P","type":"text"},"sessionUpdate":"agent_message_chunk"}}}
+{"dir":"out","method":"session/update","params":{"update":{"content":{"text":"ONG","type":"text"},"sessionUpdate":"agent_message_chunk"}}}
+{"dir":"out","result":{"stopReason":"end_turn","usage":{"inputTokens":220,"outputTokens":5}}}

@@ -1,8 +1,12 @@
 # ROADMAP: jcode provider
 
 _Goal-backward: "aayu opens T3 Code, picks jcode, chats with full memory, resumes old sessions."
-Derive what must be TRUE, build only that. Each phase = one PR, atomic commits, gates in
-QUALITY_GATES.md._
+Derive what must be TRUE, build only that. Each phase = atomic commits on `feat/jcode-provider`;
+ONE PR to `main` when E2E green. Gates in QUALITY_GATES.md._
+
+**Repo: `/Users/aayu/Workspace/developer/t3code` (do all work here). Template: CURSOR, not Grok
+(jcode is a local agent binary; no OAuth/API-key). Phase 1 DONE: round-trip proven, auth-skip fix landed.**
+
 
 ## Phase 0 — Environment + baseline green  (wave 1)
 **Must be true:** the fork builds and upstream's own checks pass locally, so later
@@ -54,9 +58,9 @@ AcpRuntimeModel expectation → jcode's actual behavior → gap/no-gap.
 **Must be true:** the actual user workflow works.
 - E2E: new jcode chat from T3 web → prompt → streamed reply → tool call renders →
   permission prompt round-trips.
-- Resume: open an existing jcode session (one of the canonical sessions from
-  `~/jcode-context/00-MASTER-INDEX.md`) inside T3.
-- Record both as short screen captures; attach to PR.
+- Resume: reopen a **T3-created** jcode session (close app, reopen, continue). External
+  import of `~/jcode-context` sessions by id is a SEPARATE project (non-goal here).
+- Record both as short screen captures; attach to the PR.
 **Verify:** both workflows demonstrated against the REAL jcode binary, not mocks.
 
 ## Phase 6 — Quality gauntlet + merge to main  (wave 4)

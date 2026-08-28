@@ -16,9 +16,8 @@ Run in order; a failure stops the line (fix, don't waive):
 6. **Conventional atomic commits** — one logical change per commit
    (`feat(provider): ...`, `test(acp): ...`), so upstream merges stay surgical.
 
-## Tier 2 — Skill-based review gauntlet (every phase PR)
-Run each as its own review pass; file findings as PR comments; every finding either
-fixed or explicitly waived with a reason in the PR description:
+## Tier 2 — Skill-based review gauntlet (run on the IMPLEMENTATION PR: Phase 3, and again at Phase 6 — NOT every micro-phase; that's theater for a one-provider change)
+Run each as its own review pass; findings fixed or waived-with-reason:
 1. **/code-review** — standards + intent axes against the phase's stated goal.
 2. **/ponytail-review** — over-engineering hunt: delete reinvented stdlib, unneeded
    abstraction, boilerplate nobody asked for. (Enforces the ≤1,200 LOC net target;
