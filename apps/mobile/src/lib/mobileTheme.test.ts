@@ -52,14 +52,19 @@ function compositeOver(overlay: string, background: string): string {
 
 describe("mobile themes", () => {
   it("declares every runtime theme variable in the static stylesheet", () => {
-    const stylesheet = NodeFS.readFileSync(new URL("../../global.css", import.meta.url), "utf8");
+    const stylesheet = NodeFS.readFileSync(
+      new URL("../../generated-uniwind-themes.css", import.meta.url),
+      "utf8",
+    );
     const stylesheetVariables = new Set(
       Array.from(stylesheet.matchAll(/--color-[a-z0-9-]+/g), ([variable]) => variable),
     );
 
-    expect(Array.from(stylesheetVariables).sort()).toEqual(
-      Object.keys(DEFAULT_MOBILE_THEME_VARIABLES.light).sort(),
-    );
+    expect(
+      Object.keys(DEFAULT_MOBILE_THEME_VARIABLES.light).filter(
+        (variable) => !stylesheetVariables.has(variable),
+      ),
+    ).toEqual([]);
   });
 
   it("shares all built-in desktop palettes", () => {

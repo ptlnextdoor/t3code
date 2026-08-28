@@ -11,7 +11,7 @@ import {
   STANDARD_THEME_PREVIEW_COLORS,
   type ThemePreviewColors,
 } from "@t3tools/shared/themePreview";
-import { DEFAULT_MOBILE_THEME_VARIABLES } from "./mobileDefaultTheme";
+import { DEFAULT_MOBILE_THEME_VARIABLES } from "./mobileDefaultTheme.ts";
 
 export const DEFAULT_MOBILE_THEME_ID = MOBILE_DEFAULT_THEME_ID;
 export const MOBILE_THEME_IDS = SHARED_MOBILE_THEME_IDS;

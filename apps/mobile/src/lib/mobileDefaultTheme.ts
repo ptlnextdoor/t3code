@@ -1,4 +1,4 @@
-import type { MobileThemeVariables } from "./mobileTheme";
+import type { MobileThemeVariables } from "./mobileTheme.ts";
 
 /** The existing T3 Code mobile palette, retained as the upgrade-safe default. */
 export const DEFAULT_MOBILE_THEME_VARIABLES = {

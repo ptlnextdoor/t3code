@@ -1,5 +1,14 @@
-import { createContext, use, useCallback, useLayoutEffect, useMemo, type ReactNode } from "react";
-import { useColorScheme } from "react-native";
+import {
+  createContext,
+  startTransition,
+  use,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
+import { Appearance, useColorScheme } from "react-native";
 
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/unstable/reactivity";
@@ -9,7 +18,6 @@ import { Uniwind } from "uniwind";
 import {
   resolveAppearance,
   resolveAppearancePreferences,
-  resolveTextScaleVariables,
   type ResolvedAppearance,
 } from "../../../lib/appearancePreferences";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../../state/preferences";
@@ -17,7 +25,6 @@ import type { Preferences } from "../../../persistence/mobile-preferences";
 import {
   createMobileThemePairPatch,
   createMobileThemeSelectionPatch,
-  getMobileThemeVariables,
   normalizeMobileThemeMode,
   resolveMobileThemeIds,
   type MobileThemeAppearance,
@@ -25,6 +32,10 @@ import {
   type MobileThemeIds,
   type MobileThemeMode,
 } from "../../../lib/mobileTheme";
+import {
+  createMobileThemeRuntimeOperations,
+  type MobileThemeRuntimeState,
+} from "../../../lib/mobileThemeRuntime";
 import { cacheTerminalFontSize } from "../../terminal/terminalUiState";
 
 interface AppearancePreferencesContextValue {
@@ -51,30 +62,6 @@ interface AppearancePreferencesContextValue {
 
 const AppearancePreferencesContext = createContext<AppearancePreferencesContextValue | null>(null);
 
-/**
- * Injects palette and text-scale variables into both adaptive stylesheets.
- * Updating the active sheet last lets the visible app settle in one pass.
- */
-function applyAppearanceVariables(baseFontSize: number, themeIds: MobileThemeIds) {
-  const textVariables = resolveTextScaleVariables(baseFontSize);
-  const currentTheme = Uniwind.currentTheme;
-  const activeAppearance =
-    currentTheme === "light" || currentTheme === "dark" ? currentTheme : null;
-
-  for (const theme of ["light", "dark"] as const) {
-    const variables = { ...getMobileThemeVariables(themeIds[theme], theme), ...textVariables };
-    if (theme !== activeAppearance) {
-      Uniwind.updateCSSVariables(theme, variables);
-    }
-  }
-  if (activeAppearance !== null) {
-    Uniwind.updateCSSVariables(activeAppearance, {
-      ...getMobileThemeVariables(themeIds[activeAppearance], activeAppearance),
-      ...textVariables,
-    });
-  }
-}
-
 export function AppearancePreferencesProvider(props: { readonly children: ReactNode }) {
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
@@ -93,49 +80,120 @@ export function AppearancePreferencesProvider(props: { readonly children: ReactN
     [storedPreferences],
   );
   const themeId = themeIds[themeAppearance];
-  const isReady = AsyncResult.isSuccess(preferencesResult) && !preferencesResult.waiting;
+  // Preference patches are optimistic. Keep controls interactive while a save is
+  // in flight so rapid theme choices can supersede one another immediately.
+  const isReady = AsyncResult.isSuccess(preferencesResult);
+  const runtimeState = useMemo<MobileThemeRuntimeState>(
+    () => ({
+      baseFontSize: preferences.baseFontSize,
+      themeAppearance,
+      themeIds,
+      themeMode,
+    }),
+    [preferences.baseFontSize, themeAppearance, themeIds, themeMode],
+  );
+  const appliedRuntimeStateRef = useRef<MobileThemeRuntimeState | null>(null);
 
-  useLayoutEffect(() => {
-    applyAppearanceVariables(preferences.baseFontSize, themeIds);
-    Uniwind.setTheme(themeMode);
-    cacheTerminalFontSize(resolveAppearance(preferences).terminalFontSize);
-  }, [preferences, themeIds, themeMode]);
+  const applyThemeRuntime = useCallback((next: MobileThemeRuntimeState) => {
+    const operations = createMobileThemeRuntimeOperations(appliedRuntimeStateRef.current, next);
+    for (const operation of operations) {
+      if (operation.kind === "update-text-variables") {
+        Uniwind.updateCSSVariables(operation.themeName, operation.variables);
+        continue;
+      }
+      if (operation.kind === "set-appearance-mode") {
+        Appearance.setColorScheme(
+          operation.themeMode === "system" ? "unspecified" : operation.appearance,
+        );
+        continue;
+      }
+      Uniwind.setTheme(operation.themeName);
+      // A custom Uniwind theme resets React Native's appearance override to
+      // `unspecified`. Restore it in the same event so native-stack headers,
+      // form-sheet chrome, and system controls cannot land one frame later on
+      // the opposite appearance.
+      Appearance.setColorScheme(
+        operation.themeMode === "system" ? "unspecified" : operation.appearance,
+      );
+    }
+    appliedRuntimeStateRef.current = next;
+  }, []);
+
+  const syncThemeRuntime = useCallback(
+    (next: MobileThemeRuntimeState) => applyThemeRuntime(next),
+    [applyThemeRuntime],
+  );
 
   const updatePreferences = useCallback(
     (patch: Partial<Preferences>) => {
-      savePreferences(patch);
+      startTransition(() => savePreferences(patch));
     },
     [savePreferences],
   );
 
+  useLayoutEffect(() => {
+    syncThemeRuntime(runtimeState);
+    cacheTerminalFontSize(resolveAppearance(preferences).terminalFontSize);
+  }, [preferences, runtimeState, syncThemeRuntime]);
+
   const setThemeIdForAppearance = useCallback(
     (appearance: MobileThemeAppearance, value: MobileThemeId) => {
-      updatePreferences(
-        createMobileThemeSelectionPatch(themeIds, themeAppearance, appearance, value),
+      const current = appliedRuntimeStateRef.current ?? runtimeState;
+      const patch = createMobileThemeSelectionPatch(
+        current.themeIds,
+        current.themeAppearance,
+        appearance,
+        value,
       );
+      syncThemeRuntime({
+        ...current,
+        themeIds: resolveMobileThemeIds(patch),
+      });
+      updatePreferences(patch);
     },
-    [themeAppearance, themeIds, updatePreferences],
+    [runtimeState, syncThemeRuntime, updatePreferences],
   );
 
   const setThemeIdForBothAppearances = useCallback(
     (value: MobileThemeId) => {
-      updatePreferences(createMobileThemePairPatch(value));
+      const current = appliedRuntimeStateRef.current ?? runtimeState;
+      const patch = createMobileThemePairPatch(value);
+      syncThemeRuntime({
+        ...current,
+        themeIds: resolveMobileThemeIds(patch),
+      });
+      updatePreferences(patch);
     },
-    [updatePreferences],
+    [runtimeState, syncThemeRuntime, updatePreferences],
   );
 
   const setThemeMode = useCallback(
     (value: MobileThemeMode) => {
+      const current = appliedRuntimeStateRef.current ?? runtimeState;
+
+      // React Native caches an app override in Appearance.getColorScheme().
+      // Clear it first so System mode reads the device preference before the
+      // matching registered Uniwind theme is applied in this same event.
+      if (value === "system") Appearance.setColorScheme("unspecified");
+      const nextAppearance =
+        value === "system" ? (Appearance.getColorScheme() === "dark" ? "dark" : "light") : value;
+      syncThemeRuntime({
+        ...current,
+        themeAppearance: nextAppearance,
+        themeMode: value,
+      });
       updatePreferences({ themeMode: value });
     },
-    [updatePreferences],
+    [runtimeState, syncThemeRuntime, updatePreferences],
   );
 
   const setBaseFontSize = useCallback(
     (value: number) => {
+      const current = appliedRuntimeStateRef.current ?? runtimeState;
+      syncThemeRuntime({ ...current, baseFontSize: value });
       updatePreferences({ baseFontSize: value });
     },
-    [updatePreferences],
+    [runtimeState, syncThemeRuntime, updatePreferences],
   );
 
   const setTerminalFontSize = useCallback(
