@@ -1,0 +1,313 @@
+/**
+ * sand.css — the design system Aayu chose, ported from grokbot's "sand"/cursor
+ * tokens. See DESIGN.md for provenance. Values here are copied from the real
+ * app, not invented.
+ *
+ * Scope: this file only defines tokens and a small set of primitives used by
+ * the command-center surfaces. It deliberately does NOT restyle the whole app.
+ */
+
+:root {
+  /* --- base ---------------------------------------------------------- */
+  --sand-base: #f0f0f0;
+  --sand-chrome: #141414;
+  --sand-editor: #181818;
+
+  /* Fills are mixes of base, never flat hexes. This is what gives the
+     surfaces their translucent, layered feel. */
+  --sand-fill-quinary: color-mix(in srgb, var(--sand-base) 4%, transparent);
+  --sand-fill-quaternary: color-mix(in srgb, var(--sand-base) 6%, transparent);
+  --sand-fill-tertiary: color-mix(in srgb, var(--sand-base) 8%, transparent);
+  --sand-fill-secondary: color-mix(in srgb, var(--sand-base) 14%, transparent);
+  --sand-fill-active: color-mix(in srgb, var(--sand-base) 16%, transparent);
+  --sand-fill-primary: color-mix(in srgb, var(--sand-base) 20%, transparent);
+  --sand-fill-focused: color-mix(in srgb, var(--sand-base) 22%, transparent);
+
+  --sand-stroke-quaternary: color-mix(in srgb, var(--sand-base) 4%, transparent);
+  --sand-stroke-tertiary: color-mix(in srgb, var(--sand-base) 8%, transparent);
+  --sand-stroke-secondary: color-mix(in srgb, var(--sand-base) 12%, transparent);
+  --sand-stroke-primary: color-mix(in srgb, var(--sand-base) 20%, transparent);
+
+  --sand-text-primary: var(--sand-base);
+  --sand-text-secondary: color-mix(in srgb, var(--sand-base) 74%, transparent);
+  --sand-text-tertiary: color-mix(in srgb, var(--sand-base) 60%, transparent);
+  --sand-text-quaternary: color-mix(in srgb, var(--sand-base) 36%, transparent);
+
+  /* --- accents ------------------------------------------------------- */
+  --sand-accent: #599ce7;
+  --sand-blue: #7bafe9;
+  --sand-green: #3fa266;
+  --sand-red: #fc6b83;
+  --sand-yellow: #f1b467;
+  --sand-purple: #9386f2;
+  --sand-orange: #d08770;
+  --sand-cyan: #88c0d0;
+  /* the signature usage-meter lime */
+  --sand-lime: #c5f467;
+
+  /* --- geometry ------------------------------------------------------ */
+  --sand-radius-xs: 2px;
+  --sand-radius-sm: 4px;
+  --sand-radius-base: 6px;
+  --sand-radius-lg: 8px;
+  --sand-radius-row: 9px;
+  --sand-radius-xl: 12px;
+  --sand-radius-dialog: 14px;
+  --sand-radius-full: 9999px;
+
+  --sand-font-xs: 11px;
+  --sand-font-sm: 12px;
+  --sand-font-base: 13px;
+  --sand-font-lg: 14px;
+  --sand-line-xs: 14px;
+  --sand-line-sm: 16px;
+  --sand-line-base: 18px;
+  --sand-line-lg: 22px;
+  --sand-tracking-base: -0.08px;
+  --sand-tracking-lg: -0.15px;
+
+  /* --- motion -------------------------------------------------------- */
+  --sand-duration-instant: 50ms;
+  --sand-duration-fast: 0.1s;
+  --sand-duration-normal: 0.15s;
+  --sand-duration-slow: 0.2s;
+  --sand-duration-slower: 0.3s;
+  /* the signature curve: fast out, long gentle settle */
+  --sand-ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+  --sand-ease-out-strong: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --sand-ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --sand-press-scale: 0.98;
+
+  /* --- elevation ----------------------------------------------------- */
+  --sand-shadow-1: color-mix(in srgb, #000000 20%, transparent);
+  --sand-shadow-2: color-mix(in srgb, var(--sand-shadow-1) 60%, transparent);
+  --sand-shadow-3: color-mix(in srgb, var(--sand-shadow-1) 30%, transparent);
+  --sand-shadow-sm: 0px 2px 8px 0px var(--sand-shadow-2);
+  /* the inset top-light is what stops cards reading as flat */
+  --sand-shadow-lg:
+    inset 0px 0px 4px 0px rgba(255, 255, 255, 0.05), 0px 0px 3px 0px var(--sand-shadow-2),
+    0px 16px 24px 0px var(--sand-shadow-3);
+  --sand-shadow-dialog: 0 24px 80px rgba(0, 0, 0, 0.5);
+
+  --sand-scrim: #14141480;
+  --sand-scrim-heavy: #141414e5;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Motion primitives                                                      */
+/* ---------------------------------------------------------------------- */
+
+/* Entrance: rise and settle. Opacity completes at 55% so the element is
+   fully visible while still travelling. That early-opacity trick is what
+   makes it feel alive rather than mechanical. */
+@keyframes sand-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sand-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Loading shimmer that sweeps across a track. */
+@keyframes sand-sweep {
+  0% {
+    transform: translate(-100%);
+  }
+  100% {
+    transform: translate(340%);
+  }
+}
+
+@keyframes sand-spin {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.sand-rise {
+  animation: sand-rise 0.28s var(--sand-ease-out-quint) both;
+}
+
+.sand-fade {
+  animation: sand-fade var(--sand-duration-slow) var(--sand-ease-out-quint) both;
+}
+
+/* Staggered children: each row arrives a beat after the last. Capped at 8 so
+   a long list never feels slow. */
+.sand-stagger > * {
+  animation: sand-rise 0.26s var(--sand-ease-out-quint) both;
+}
+.sand-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.sand-stagger > *:nth-child(2) {
+  animation-delay: 28ms;
+}
+.sand-stagger > *:nth-child(3) {
+  animation-delay: 56ms;
+}
+.sand-stagger > *:nth-child(4) {
+  animation-delay: 84ms;
+}
+.sand-stagger > *:nth-child(5) {
+  animation-delay: 112ms;
+}
+.sand-stagger > *:nth-child(6) {
+  animation-delay: 140ms;
+}
+.sand-stagger > *:nth-child(7) {
+  animation-delay: 168ms;
+}
+.sand-stagger > *:nth-child(n + 8) {
+  animation-delay: 196ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sand-rise,
+  .sand-fade,
+  .sand-stagger > * {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Surface primitives                                                     */
+/* ---------------------------------------------------------------------- */
+
+.sand-surface {
+  background: var(--sand-editor);
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog);
+  box-shadow: var(--sand-shadow-lg);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  line-height: var(--sand-line-base);
+  letter-spacing: var(--sand-tracking-base);
+}
+
+/* A grouped list of facts. Radius only on the ends, hairlines between:
+   this is exactly how grokbot builds its usage list. */
+.sand-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-row);
+  background: var(--sand-fill-quinary);
+}
+
+.sand-group > * + * {
+  border-top: 1px solid var(--sand-stroke-tertiary);
+}
+
+.sand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 11px;
+  min-height: 34px;
+  box-sizing: border-box;
+  transition: background-color 0.12s ease;
+}
+
+.sand-row[data-interactive] {
+  cursor: pointer;
+}
+
+.sand-row[data-interactive]:hover {
+  background: var(--sand-fill-quaternary);
+}
+
+.sand-row[data-interactive]:active {
+  transform: scale(var(--sand-press-scale));
+}
+
+/* Gray label, white right-aligned value. The core reading pattern. */
+.sand-label {
+  color: var(--sand-text-secondary);
+  min-width: 0;
+  flex: 1;
+}
+
+.sand-value {
+  color: var(--sand-text-primary);
+  margin-left: auto;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sand-hint {
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-xs);
+}
+
+/* Small uppercase section heading, the quiet kind used above each group. */
+.sand-section-title {
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Status dot. Color comes from --sand-dot set by the caller. */
+.sand-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-dot, var(--sand-text-quaternary));
+  flex-shrink: 0;
+}
+
+/* Count / countdown pill. */
+.sand-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: var(--sand-radius-full);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  background: var(--sand-pill-bg, var(--sand-fill-tertiary));
+  color: var(--sand-pill-fg, var(--sand-text-secondary));
+  white-space: nowrap;
+}
+
+/* Usage meter with the signature lime fill. */
+.sand-meter-track {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  background: var(--sand-fill-tertiary);
+  border-radius: var(--sand-radius-full);
+}
+
+.sand-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--sand-lime);
+  border-radius: inherit;
+  transition: width var(--sand-duration-slower) var(--sand-ease-out-quint);
+}
