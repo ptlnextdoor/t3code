@@ -1,0 +1,54 @@
+name: Sync upstream (pingdotgg/t3code)
+
+# Keeps this fork current with Theo's main branch.
+# - Fast-forwards a clean `upstream-main` mirror branch automatically.
+# - Opens/updates a PR merging upstream into `main` so your jcode changes
+#   are preserved and conflicts are reviewed, never silently clobbered.
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # daily 07:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/pingdotgg/t3code.git || true
+          git fetch upstream --tags
+          git fetch origin
+
+      - name: Update upstream-main mirror (fast-forward only)
+        run: |
+          git checkout -B upstream-main upstream/main
+          git push origin upstream-main --force
+
+      - name: Open/refresh merge PR into main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git merge-base --is-ancestor upstream/main origin/main; then
+            echo "main already contains upstream/main; nothing to do."
+            exit 0
+          fi
+          gh pr list --head upstream-main --base main --state open \
+            --json number -q '.[0].number' > /tmp/prnum || true
+          if [ -s /tmp/prnum ] && [ "$(cat /tmp/prnum)" != "" ]; then
+            echo "Existing sync PR #$(cat /tmp/prnum) will update automatically."
+          else
+            gh pr create --base main --head upstream-main \
+              --title "Sync upstream: pingdotgg/t3code main" \
+              --body "Automated daily sync of Theo's upstream. Review conflicts against the jcode provider, then merge. See .github/JCODE_FORK.md." \
+              || echo "No PR created (branches may be equal)."
+          fi

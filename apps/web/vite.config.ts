@@ -261,6 +261,11 @@ export default defineConfig(() => {
       outDir: "dist",
       emptyOutDir: true,
       sourcemap: buildSourcemap,
+      // Opt-in isolated design harness (scripts/today-e2e.mjs). Never part of
+      // a normal build, so it cannot ship in the app.
+      ...(process.env.T3CODE_DESIGN_HARNESS === "1"
+        ? { rollupOptions: { input: "today-harness.html" }, outDir: "dist-harness" }
+        : {}),
     },
     test: {
       projects: [defineProject(unitTestProject)],
