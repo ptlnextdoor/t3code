@@ -317,11 +317,25 @@
 /* Matches design-refs/today-panel.png                                    */
 /* ---------------------------------------------------------------------- */
 
-.today-panel {
+.sand-rail {
   position: fixed;
   top: 44px;
   right: 16px;
+  bottom: 16px;
   z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 384px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.sand-rail > * {
+  pointer-events: auto;
+}
+
+.today-panel {
   display: flex;
   flex-direction: column;
   width: 384px;
@@ -546,7 +560,7 @@
    shift the toast viewport left of it so transient notifications never cover
    the command center (seen live: Codex update toast burying the critical
    path). :has keeps this zero-JS and scoped. */
-body:has(.today-panel:not([data-collapsed])) [data-slot="toast-viewport"] {
+body:has(.sand-rail) [data-slot="toast-viewport"] {
   right: calc(16px + 384px + 12px);
   left: auto;
   margin-right: 0;
@@ -567,8 +581,8 @@ body:has(.today-panel:not([data-collapsed])) [data-slot="toast-viewport"] {
 .team-panel {
   display: flex;
   flex-direction: column;
-  width: 384px;
-  max-width: calc(100vw - 32px);
+  flex-shrink: 0;
+  width: 100%;
   overflow: hidden;
   contain: paint;
   isolation: isolate;

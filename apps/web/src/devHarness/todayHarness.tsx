@@ -19,10 +19,10 @@ const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     <StrictMode>
-      <div style={{ display: "flex", gap: 24, padding: 24, alignItems: "flex-start" }}>
+      <div className="sand-rail">
         <TeamPanel />
+        <TodayPanel />
       </div>
-      <TodayPanel />
     </StrictMode>,
   );
 }

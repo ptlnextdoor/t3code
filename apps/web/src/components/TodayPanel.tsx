@@ -43,9 +43,14 @@ const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 /** Rows shown per section before collapsing into a "Show N more" affordance. */
 const PREVIEW_ROWS = 4;
 
-// Deadlines are deliberately omitted: their rows duplicate the critical path,
-// and every row already carries its own countdown pill.
-const SECTION_ORDER = ["critical", "drafts", "decisions"] as const;
+/*
+ * Team (above this panel in the rail) already surfaces the critical path,
+ * grouped by the employee who owns it. Repeating those rows here made the rail
+ * state the same four items twice, so Today is now strictly the work queue:
+ * things to approve and decisions to make. Deadlines are likewise omitted since
+ * every row carries its own countdown pill.
+ */
+const SECTION_ORDER = ["drafts", "decisions"] as const;
 
 const SECTION_LABEL: Record<string, { title: string; unit: string }> = {
   critical: { title: "Critical path", unit: "items" },
@@ -177,10 +182,10 @@ export function TodayPanel() {
   const ordered = SECTION_ORDER.map((kind) => sections.find((s) => s.kind === kind)).filter(
     (s): s is TodaySection => s !== undefined,
   );
-  const critical = sections.find((s) => s.kind === "critical");
-  const urgentCount = critical?.items.length ?? 0;
-  // Exactly one accent in the panel: the first critical row that can be acted on.
-  const accentAction = critical?.items.find((item) => item.action !== null)?.text ?? null;
+  const queued = ordered.reduce((sum, section) => sum + section.items.length, 0);
+  // Exactly one accent in the panel: the first queued row that can be acted on.
+  const accentAction =
+    ordered.flatMap((section) => section.items).find((item) => item.action !== null)?.text ?? null;
   const latestCard = payload.cards[0];
   const dateLabel = now.toLocaleDateString(undefined, {
     day: "numeric",
@@ -200,10 +205,8 @@ export function TodayPanel() {
         onClick={toggleCollapsed}
         aria-expanded={!collapsed}
       >
-        <span className="today-panel__title">Today</span>
-        {urgentCount > 0 ? (
-          <span className="sand-pill today-pill-now">{urgentCount} urgent</span>
-        ) : null}
+        <span className="today-panel__title">Queue</span>
+        {queued > 0 ? <span className="sand-pill emp-pill-calm">{queued} queued</span> : null}
         <span className="today-panel__date">{dateLabel}</span>
       </button>
 
