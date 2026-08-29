@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aayu.jcode-session-reaper</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/aayu/.nvm/versions/node/v24.11.1/bin/node</string>
+    <string>/Users/aayu/Workspace/developer/t3code/scripts/reap-sessions.mjs</string>
+    <string>--kill</string>
+    <string>--max-age-hours</string>
+    <string>12</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/aayu/.jcode/reaper.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/aayu/.jcode/reaper.log</string>
+</dict>
+</plist>
