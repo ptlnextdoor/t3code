@@ -64,3 +64,33 @@ Melani stays installed and private. Its Swift is NOT ported. Its memo-generators
 
 The 20% failure mode: this super-app becomes the next "newer shinier thing" that steals the
 paper's session. Mitigation: Slice 1 only, then freeze until IECBES is submitted.
+
+## The employee layer (decided 2026-08-29, build AFTER IECBES)
+
+Aayu named what he actually loves about grokbot, and it is not the router
+(t3code already has all six drivers). It is the persona layer:
+
+- The unit is an EMPLOYEE, not a session. Sessions are disposable
+  implementation details the employee hides. You ask "where are we?",
+  you never resume chat #847.
+- Role, name, avatar are set BY TALKING TO IT, not in settings.
+- Connections are owned by the employee: "connect Gmail" = one button +
+  login it walks you through. No consoles, no tokens. Elder-usable.
+- Execution is remote (server), so the laptop never chokes on bash.
+
+Stack: Models (brains) -> jcode harness (hands) -> t3code shell (window)
+-> Employees (people). We replace NEITHER the model NOR the harness.
+
+Proposed roster mapped to the 55 fronts:
+Paper - Zaidi, IECBES, arXiv, Linderman gate
+Outreach - Stanford PIs, Coleman, Zare, NextSense
+Apps - Boom, college apps, scholarships, SAT
+Bench - Kahlus repo, plasma hardware, PAROL6
+Ops - Mac disk, calendar, Gmail hygiene
+
+The 1,518 imported chats become employee MEMORY, not rail clutter.
+TODAY panel becomes "what each employee is escalating to you."
+Remote exec: t3code server already runs standalone on :3773; moving it to
+a VPS is configuration, not architecture.
+
+Freeze rule still holds: none of this before the paper is submitted.
