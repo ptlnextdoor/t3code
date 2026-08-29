@@ -224,4 +224,56 @@ jcodeAdapterTestLayer("JcodeAdapterLive", (it) => {
       }),
     120_000,
   );
+
+  // Resume/attach: prove t3code can open an EXISTING jcode session by id and
+  // replay its real history (this is the "all my chats, real state" path).
+  // Opt-in: set JCODE_RESUME_SESSION_ID to a real ~/.jcode/sessions id.
+  const resumeSessionId = process.env.JCODE_RESUME_SESSION_ID;
+  const resumeCwd = process.env.JCODE_RESUME_CWD ?? process.cwd();
+  const resumeEffect = jcodeBinary && resumeSessionId ? it.effect : it.effect.skip;
+
+  resumeEffect(
+    "attaches an existing jcode session by id and replays its history",
+    () =>
+      Effect.gen(function* () {
+        const adapter = yield* JcodeAdapter;
+        const settings = yield* ServerSettingsService;
+        const threadId = ThreadId.make("jcode-resume-thread");
+
+        yield* settings.updateSettings({
+          providers: { jcode: { enabled: true, binaryPath: jcodeBinary! } },
+        });
+
+        const collected: Array<ProviderRuntimeEvent> = [];
+        const collectorFiber = yield* adapter.streamEvents.pipe(
+          Stream.tap((event) => Effect.sync(() => collected.push(event))),
+          Stream.runDrain,
+          Effect.forkChild,
+        );
+
+        const session = yield* adapter
+          .startSession({
+            threadId,
+            provider: ProviderDriverKind.make("jcode"),
+            cwd: resumeCwd,
+            runtimeMode: "full-access",
+            modelSelection: { instanceId: ProviderInstanceId.make("jcode"), model: "" },
+            resumeCursor: { schemaVersion: 1, sessionId: resumeSessionId! },
+          })
+          .pipe(Effect.timeout("90 seconds"));
+
+        // The session that comes back must be the SAME jcode session we asked
+        // to resume, not a fresh one.
+        assert.equal(session.provider, "jcode");
+        const resumed = session.resumeCursor as { sessionId?: string } | undefined;
+        assert.equal(resumed?.sessionId, resumeSessionId);
+
+        yield* adapter.stopSession(threadId);
+        yield* Fiber.interrupt(collectorFiber);
+
+        const types = collected.map((event) => event.type);
+        assert.include(types, "session.started");
+      }),
+    120_000,
+  );
 });
