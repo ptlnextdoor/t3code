@@ -43,7 +43,7 @@ describe("parseNowSections", () => {
     assert.deepStrictEqual(
       critical?.items.map((i) => i.text),
       [
-        "IECBES paper submission — HARD DEADLINE Mon Aug 31.",
+        "IECBES paper submission — HARD DEADLINE Mon Aug 31. Extra continuation line that is not a bullet.",
         "Zaidi co-author sign-off email — never sent.",
         "Boom recruiter asked twice.",
       ],
@@ -84,6 +84,39 @@ describe("parseNowSections", () => {
     );
   });
 
+  it("keeps a wrapped bullet whole, so its identifying words are not lost", () => {
+    // Regression: a line-at-a-time reader split soft-wrapped bullets into
+    // separate items. The fragments lost the words that name their owner, so
+    // real escalations routed to nobody and the panel showed sentence
+    // fragments. Markdown wrapping is normal writing; it must not change meaning.
+    const wrapped = [
+      "## 🔴 Critical",
+      "- The deadline was extended to Aug 31 by the conference; the IECBES",
+      "  submission is what unblocks the Linderman email.",
+      "",
+      "- Boom recruiter asked twice.",
+    ].join("\n");
+    const items = parseNowSections(wrapped)[0]?.items ?? [];
+    assert.strictEqual(items.length, 2);
+    assert.include(items[0]!.text, "IECBES");
+    assert.include(items[0]!.text, "Linderman");
+    assert.strictEqual(items[1]!.text, "Boom recruiter asked twice.");
+  });
+
+  it("does not let a bullet swallow the prose that follows a blank line", () => {
+    const withProse = [
+      "## 🔴 Critical",
+      "- A real item.",
+      "",
+      "Some unindented prose that is not part of the bullet.",
+    ].join("\n");
+    const items = parseNowSections(withProse)[0]?.items ?? [];
+    assert.deepStrictEqual(
+      items.map((i) => i.text),
+      ["A real item."],
+    );
+  });
+
   it("drops empty sections", () => {
     const sections = parseNowSections("## Empty\n\n## 🔴 Critical\n- one");
     assert.deepStrictEqual(
@@ -96,7 +129,7 @@ describe("parseNowSections", () => {
 describe("extractCriticalLines", () => {
   it("returns the critical section's items only", () => {
     assert.deepStrictEqual(extractCriticalLines(SAMPLE_NOW), [
-      "IECBES paper submission — HARD DEADLINE Mon Aug 31.",
+      "IECBES paper submission — HARD DEADLINE Mon Aug 31. Extra continuation line that is not a bullet.",
       "Zaidi co-author sign-off email — never sent.",
       "Boom recruiter asked twice.",
     ]);

@@ -26,6 +26,9 @@ const blocks = [...roster.matchAll(/id: "(\w+)",\s*keywords: \[([^\]]+)\]/g)].ma
 
 const sections = {};
 let cur = null;
+// Mirrors parseNowSections: a bullet owns its soft-wrapped continuation lines,
+// otherwise a fragment loses the words that name its owner and reads as unrouted.
+let openBullet = false;
 for (const line of nowMarkdown.split("\n")) {
   if (line.startsWith("## ")) {
     const h = line.toLowerCase();
@@ -39,18 +42,31 @@ for (const line of nowMarkdown.split("\n")) {
             ? "deadlines"
             : "other";
     sections[cur] ??= [];
+    openBullet = false;
     continue;
   }
   if (!cur) continue;
   const b = /^\s*(?:\d+\.|[-*])\s+(.*)$/.exec(line);
-  if (b) sections[cur].push(b[1].replace(/\*\*/g, ""));
-  else if (line.trimStart().startsWith("|") && !/^\s*\|[\s|:-]+\|?\s*$/.test(line)) {
+  if (b) {
+    sections[cur].push(b[1].replace(/\*\*/g, ""));
+    openBullet = true;
+    continue;
+  }
+  if (line.trimStart().startsWith("|") && !/^\s*\|[\s|:-]+\|?\s*$/.test(line)) {
     const c = line
       .split("|")
       .map((x) => x.trim())
       .filter(Boolean);
     if (c.length >= 2 && c[0].toLowerCase() !== "draft") sections[cur].push(c.join(" "));
+    openBullet = false;
+    continue;
   }
+  if (openBullet && /^\s+\S/.test(line)) {
+    const last = sections[cur].length - 1;
+    sections[cur][last] = `${sections[cur][last]} ${line.trim().replace(/\*\*/g, "")}`;
+    continue;
+  }
+  openBullet = false;
 }
 const own = (t) => {
   const h = t.toLowerCase();

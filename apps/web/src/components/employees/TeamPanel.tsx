@@ -30,7 +30,13 @@ const STATE_COLOR: Record<string, string> = {
   "needs-you": "var(--sand-red)",
 };
 
-function EmployeeRow({ summary }: { summary: EmployeeSummary }) {
+function EmployeeRow({
+  summary,
+  onOpen,
+}: {
+  summary: EmployeeSummary;
+  onOpen: (summary: EmployeeSummary) => void;
+}) {
   const { employee, ask, badge, state, total } = summary;
   // Only show a countdown for genuinely blocking work. Dates scraped from the
   // prose of a queued draft ("sitting since Aug 19") are context, not alarms.
@@ -43,7 +49,8 @@ function EmployeeRow({ summary }: { summary: EmployeeSummary }) {
       type="button"
       className="emp"
       style={{ "--emp-state": STATE_COLOR[state] } as React.CSSProperties}
-      title={employee.role}
+      title={`${employee.role}\n\nClick to talk to ${employee.name}.`}
+      onClick={() => onOpen(summary)}
     >
       <span className="emp__name">
         {employee.name}
@@ -73,7 +80,17 @@ function EmployeeRow({ summary }: { summary: EmployeeSummary }) {
   );
 }
 
-export function TeamPanel() {
+/**
+ * `onOpenEmployee` is injected rather than resolved here on purpose: opening a
+ * thread needs router and draft-store context, and a status surface must stay
+ * renderable without them. Wiring it internally crashed the whole panel
+ * wherever that context was absent.
+ */
+export function TeamPanel({
+  onOpenEmployee,
+}: {
+  onOpenEmployee?: (summary: EmployeeSummary) => void;
+} = {}) {
   const [markdown, setMarkdown] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,7 +127,11 @@ export function TeamPanel() {
       </div>
       <div className="team-panel__body sand-stagger">
         {summaries.map((summary) => (
-          <EmployeeRow key={summary.employee.id} summary={summary} />
+          <EmployeeRow
+            key={summary.employee.id}
+            summary={summary}
+            onOpen={(next) => onOpenEmployee?.(next)}
+          />
         ))}
       </div>
     </div>

@@ -95,29 +95,46 @@ function makeItem(raw: string, kind: TodaySectionKind): TodayItem {
 /**
  * Parse NOW.md into sections. Only list items (numbered, dashed, or table rows)
  * are captured; prose and table separators are dropped.
+ *
+ * A bullet owns its soft-wrapped continuation lines. Markdown wraps a long
+ * bullet across several source lines, and a line-at-a-time reader would treat
+ * each fragment as its own item: the item loses the words that identify it
+ * (so it routes to no employee at all) and the panel shows a sentence
+ * fragment. Continuation is joined back into the bullet it belongs to.
  */
 export function parseNowSections(markdown: string): Array<TodaySection> {
   const lines = markdown.split("\n");
   const sections: Array<TodaySection> = [];
-  let current: { kind: TodaySectionKind; title: string; items: Array<TodayItem> } | null = null;
+  let current: { kind: TodaySectionKind; title: string; items: Array<string> } | null = null;
 
   const flush = () => {
     if (current && current.items.length > 0) {
-      sections.push({ kind: current.kind, title: current.title, items: current.items });
+      const kind = current.kind;
+      sections.push({
+        items: current.items.map((raw) => makeItem(raw, kind)),
+        kind,
+        title: current.title,
+      });
     }
   };
+
+  // Whether the previous line was a bullet that a following indented, non-empty,
+  // non-structural line should continue.
+  let openBullet = false;
 
   for (const line of lines) {
     if (line.startsWith("## ")) {
       flush();
       current = { items: [], kind: classifyHeading(line), title: cleanHeading(line) };
+      openBullet = false;
       continue;
     }
     if (!current) continue;
 
     const bullet = /^\s*(?:\d+\.|[-*])\s+(.*)$/.exec(line);
     if (bullet?.[1]) {
-      current.items.push(makeItem(bullet[1], current.kind));
+      current.items.push(bullet[1]);
+      openBullet = true;
       continue;
     }
     // Table rows: "| label | where | blocked on |" — keep the first two cells.
@@ -127,9 +144,19 @@ export function parseNowSections(markdown: string): Array<TodaySection> {
         .map((c) => c.trim())
         .filter((c) => c.length > 0);
       if (cells.length >= 2 && cells[0]!.toLowerCase() !== "draft") {
-        current.items.push(makeItem(`**${cells[0]}** ${cells[1]}`, current.kind));
+        current.items.push(`**${cells[0]}** ${cells[1]}`);
       }
+      openBullet = false;
+      continue;
     }
+    // A wrapped continuation of the bullet above: indented and still prose.
+    if (openBullet && /^\s+\S/.test(line)) {
+      const last = current.items.length - 1;
+      current.items[last] = `${current.items[last]!} ${line.trim()}`;
+      continue;
+    }
+    // A blank line, or unindented prose, ends the bullet.
+    openBullet = false;
   }
   flush();
   return sections;
