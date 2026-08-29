@@ -53,3 +53,20 @@ lines and half-edit — that's the confident-wrong-fix trap.
 - Resume = **T3-created** jcode sessions only. Importing `~/jcode-context` sessions by id = separate project.
 - Mobile-specific work (rides server API).
 - Upstreaming to Theo.
+
+---
+
+## PHASE 2/3/4 — DONE (verified end-to-end against real jcode)
+
+- Provider trio built + registered (`builtInDrivers.ts`), settings enabled in `~/.t3/userdata/settings.json`.
+- `JcodeProvider.test.ts`: 6 tests incl. live version+handshake probe. PASS.
+- **`JcodeAdapter.test.ts`: live acceptance (commit `f5f33924`):**
+  - **Chat**: real binary, full lifecycle streamed (`session.started`→`turn.completed`), reply text matched. ~3s.
+  - **Image**: real 32x32 red PNG written to attachmentsDir, round-tripped through adapter as ACP image block; jcode replied `"red"`. ~3s.
+  - Auto-skips when no jcode binary present.
+- Server typecheck: 0 jcode errors. All 8 jcode tests pass.
+
+## REMAINING (deferred, optional)
+
+- In-app GUI smoke: launch desktop, eyeball jcode in provider list + click-through chat/image (source/CLI proven; GUI not yet eyeballed).
+- Model picker / mode selection (deferred by plan; `sessionModelSwitch: "unsupported"`).
