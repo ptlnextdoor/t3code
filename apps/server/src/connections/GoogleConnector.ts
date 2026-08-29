@@ -20,8 +20,15 @@ import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
-const CREDENTIALS_PATH = NodePath.join(NodeOS.homedir(), ".jcode/google_credentials.json");
-const TOKEN_PATH = NodePath.join(NodeOS.homedir(), ".jcode/google_oauth.json");
+/*
+ * Overridable for remote execution: on a VPS the credential lives wherever the
+ * operator mounts it (a secret file, a bind mount), not under a Mac homedir.
+ */
+const CREDENTIALS_PATH =
+  process.env.T3CODE_GOOGLE_CREDENTIALS ??
+  NodePath.join(NodeOS.homedir(), ".jcode/google_credentials.json");
+const TOKEN_PATH =
+  process.env.T3CODE_GOOGLE_TOKEN ?? NodePath.join(NodeOS.homedir(), ".jcode/google_oauth.json");
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 /** Refresh once this fraction of the token's lifetime has elapsed. */

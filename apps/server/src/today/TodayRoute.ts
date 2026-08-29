@@ -16,11 +16,17 @@ import * as NodeSqlite from "node:sqlite";
 import * as Effect from "effect/Effect";
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http";
 
-const DAYFLOW_DB_PATH = NodePath.join(
-  NodeOS.homedir(),
-  "Library/Application Support/Dayflow/chunks.sqlite",
-);
-const NOW_MD_PATH = NodePath.join(NodeOS.homedir(), ".jcode/knowledge-org/NOW.md");
+/*
+ * Paths are overridable so the server can run on a remote box (a VPS, a second
+ * machine) while its inputs live wherever they actually are: synced into the
+ * container, mounted, or pushed from the laptop. Hardcoding homedir() made the
+ * server silently return an empty command centre anywhere but this Mac.
+ */
+const DAYFLOW_DB_PATH =
+  process.env.T3CODE_DAYFLOW_DB ??
+  NodePath.join(NodeOS.homedir(), "Library/Application Support/Dayflow/chunks.sqlite");
+const NOW_MD_PATH =
+  process.env.T3CODE_NOW_MD ?? NodePath.join(NodeOS.homedir(), ".jcode/knowledge-org/NOW.md");
 /** Cap payloads: t3code perf rule, no large payloads to the client. */
 const MAX_CARDS = 30;
 const MAX_NOW_BYTES = 64 * 1024;
