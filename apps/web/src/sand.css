@@ -311,3 +311,240 @@
   border-radius: inherit;
   transition: width var(--sand-duration-slower) var(--sand-ease-out-quint);
 }
+
+/* ---------------------------------------------------------------------- */
+/* TODAY command center                                                   */
+/* Matches design-refs/today-panel.png                                    */
+/* ---------------------------------------------------------------------- */
+
+.today-panel {
+  position: fixed;
+  top: 44px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: 384px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 88px);
+  overflow: hidden;
+  background: var(--sand-editor);
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog);
+  box-shadow: var(--sand-shadow-lg);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  line-height: var(--sand-line-base);
+  letter-spacing: var(--sand-tracking-base);
+}
+
+.today-panel__head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 15px;
+  border: 0;
+  border-bottom: 1px solid var(--sand-stroke-tertiary);
+  background: rgba(0, 0, 0, 0.14);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.today-panel__head:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.today-panel__title {
+  font-size: var(--sand-font-lg);
+  font-weight: 560;
+  letter-spacing: var(--sand-tracking-lg);
+}
+
+.today-panel__date {
+  margin-left: auto;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+}
+
+.today-panel__body {
+  display: grid;
+  gap: 18px;
+  padding: 15px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sand-fill-secondary) transparent;
+}
+
+.today-panel__empty {
+  margin: 0;
+  color: var(--sand-text-tertiary);
+}
+
+.today-panel__foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 15px;
+  border-top: 1px solid var(--sand-stroke-tertiary);
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+}
+
+.today-panel__foot-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.today-sect {
+  display: grid;
+  gap: 7px;
+}
+
+.today-sect__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.today-sect__count {
+  margin-left: auto;
+  color: var(--sand-text-quaternary);
+  font-size: var(--sand-font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.today-row {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  min-height: 32px;
+}
+
+/* Rows stay scannable: one line by default, two for the critical path where
+   losing the detail would lose the point. */
+.today-row__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sand-font-base);
+  line-height: 17px;
+  color: var(--sand-text-secondary);
+}
+
+.today-sect[data-kind="critical"] .today-row__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  text-overflow: unset;
+}
+
+.today-sect[data-kind="critical"] .today-row {
+  align-items: flex-start;
+}
+
+.today-sect[data-kind="critical"] .today-act,
+.today-sect[data-kind="critical"] .sand-pill {
+  margin-top: 1px;
+}
+
+.today-row__text b {
+  color: var(--sand-text-primary);
+  font-weight: 550;
+}
+
+.today-row__detail {
+  color: var(--sand-text-tertiary);
+}
+
+.today-row--more {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.today-row--more:hover {
+  background: var(--sand-fill-quaternary);
+}
+
+.today-row__more {
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-base);
+}
+
+/* Quiet affordance. Reads as a control, not a call to action. */
+.today-act {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: var(--sand-radius-base);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-xs);
+  font-weight: 500;
+  opacity: 0.9;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.today-act:hover {
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-primary);
+  opacity: 1;
+}
+
+.today-act:active {
+  transform: scale(var(--sand-press-scale));
+}
+
+/* The single accent in the panel: the one next action that matters most. */
+.today-act--go {
+  background: color-mix(in srgb, var(--sand-accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--sand-accent) 34%, transparent);
+  color: var(--sand-accent);
+  opacity: 1;
+}
+
+.today-act--go:hover {
+  background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
+  color: var(--sand-accent);
+}
+
+.today-pill-now {
+  --sand-pill-bg: color-mix(in srgb, var(--sand-red) 16%, transparent);
+  --sand-pill-fg: var(--sand-red);
+}
+
+.today-pill-soon {
+  --sand-pill-bg: color-mix(in srgb, var(--sand-yellow) 14%, transparent);
+  --sand-pill-fg: var(--sand-yellow);
+}
+
+/* Keep entrance animations inside the panel's rounded clip. Without paint
+   containment the transformed rows composite outside the border radius. */
+.today-panel {
+  contain: paint;
+  isolation: isolate;
+}

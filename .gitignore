@@ -38,3 +38,6 @@ node_modules/
 *.log
 .env*
 !.env.example
+
+# Design harness build output (opt-in, never shipped)
+apps/web/dist-harness/

@@ -40,19 +40,48 @@ describe("parseNowSections", () => {
 
   it("captures bullet and numbered items, markdown stripped", () => {
     const critical = parseNowSections(SAMPLE_NOW).find((s) => s.kind === "critical");
-    assert.deepStrictEqual(critical?.items, [
-      "IECBES paper submission — HARD DEADLINE Mon Aug 31.",
-      "Zaidi co-author sign-off email — never sent.",
-      "Boom recruiter asked twice.",
-    ]);
+    assert.deepStrictEqual(
+      critical?.items.map((i) => i.text),
+      [
+        "IECBES paper submission — HARD DEADLINE Mon Aug 31.",
+        "Zaidi co-author sign-off email — never sent.",
+        "Boom recruiter asked twice.",
+      ],
+    );
   });
 
-  it("flattens table rows to 'label — where', dropping the header row", () => {
+  it("splits each item into a bold lead and a gray detail", () => {
+    const critical = parseNowSections(SAMPLE_NOW).find((s) => s.kind === "critical");
+    const first = critical?.items[0];
+    assert.strictEqual(first?.lead, "IECBES paper submission — HARD DEADLINE Mon Aug 31");
+    const third = critical?.items[2];
+    assert.strictEqual(third?.lead, "Boom recruiter asked twice.");
+    assert.strictEqual(third?.detail, "");
+  });
+
+  it("infers one action verb per row", () => {
+    const sections = parseNowSections(SAMPLE_NOW);
+    const critical = sections.find((s) => s.kind === "critical");
+    // "never sent" -> Send; "asked twice" -> Reply
+    assert.strictEqual(critical?.items[1]?.action, "Send");
+    assert.strictEqual(critical?.items[2]?.action, "Reply");
+    // decisions always get Decide
+    const decisions = sections.find((s) => s.kind === "decisions");
+    assert.strictEqual(decisions?.items[0]?.action, "Decide");
+    // a plain draft row falls back to Review
+    const drafts = sections.find((s) => s.kind === "drafts");
+    assert.strictEqual(drafts?.items[0]?.action, "Review");
+  });
+
+  it("turns table rows into lead + detail, dropping the header row", () => {
     const drafts = parseNowSections(SAMPLE_NOW).find((s) => s.kind === "drafts");
-    assert.deepStrictEqual(drafts?.items, [
-      "Linderman follow-up — Gmail draft, HELD",
-      "Fisher reply — not drafted",
-    ]);
+    assert.deepStrictEqual(
+      drafts?.items.map((i) => [i.lead, i.detail]),
+      [
+        ["Linderman follow-up", "Gmail draft, HELD"],
+        ["Fisher reply", "not drafted"],
+      ],
+    );
   });
 
   it("drops empty sections", () => {

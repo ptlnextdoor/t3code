@@ -1,35 +1,25 @@
 /**
- * TODAY panel (SUPERAPP-PLAN.md, Slice 1).
+ * TODAY command center (SUPERAPP-PLAN.md, Slice 1).
  *
- * A floating command-center card that answers one question: "what needs me
- * right now?" It reads the local server bridge (`/api/today`):
- *  - NOW.md, parsed into typed sections (critical path, drafts, deadlines,
- *    decisions), each with its own accent + icon
- *  - Dayflow's timeline card for the current block (what's on screen now)
+ * One surface that answers "what needs me right now?" and lets it be acted on.
+ * Reads the local bridge `/api/today`:
+ *  - NOW.md parsed into typed sections (critical, drafts, decisions)
+ *  - Dayflow's current timeline card as live screen context
  *
- * Styling matches the app's own surfaces (Card radius/border/shadow, semantic
- * destructive/warning/success/info tokens) rather than inventing a look.
+ * Visual language is the "sand" system (see DESIGN.md + sand.css), matched to
+ * the reference in design-refs/today-panel.png. Rules held here:
+ *  - exactly ONE accent control in the panel: the single most urgent action
+ *  - one line per row; copy is truncated rather than wrapped
+ *  - gray labels, right-aligned values, 13px base, 1px hairlines
  */
-import {
-  AlertTriangleIcon,
-  CalendarClockIcon,
-  CheckCircle2Icon,
-  ChevronDownIcon,
-  CircleHelpIcon,
-  MonitorIcon,
-  SendIcon,
-  SparklesIcon,
-} from "lucide-react";
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useState } from "react";
 
 import { resolvePrimaryEnvironmentHttpUrl } from "../environments/primary/target";
-import { cn } from "~/lib/utils";
-import { ScrollArea } from "./ui/scroll-area";
 import {
   deadlineLabel,
+  isUrgentDeadline,
   parseNowSections,
   type TodaySection,
-  type TodaySectionKind,
 } from "./todayPanel.logic";
 
 interface TodayTimelineCard {
@@ -50,20 +40,18 @@ interface TodayPayload {
 
 const COLLAPSED_STORAGE_KEY = "t3.todayPanel.collapsed";
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+/** Rows shown per section before collapsing into a "Show N more" affordance. */
+const PREVIEW_ROWS = 4;
 
-const SECTION_META: Record<
-  TodaySectionKind,
-  { icon: ComponentType<{ className?: string }>; accent: string; dot: string }
-> = {
-  critical: {
-    accent: "text-destructive-foreground",
-    dot: "bg-destructive",
-    icon: AlertTriangleIcon,
-  },
-  drafts: { accent: "text-info-foreground", dot: "bg-info", icon: SendIcon },
-  deadlines: { accent: "text-warning-foreground", dot: "bg-warning", icon: CalendarClockIcon },
-  decisions: { accent: "text-foreground", dot: "bg-muted-foreground", icon: CircleHelpIcon },
-  other: { accent: "text-muted-foreground", dot: "bg-muted-foreground", icon: CheckCircle2Icon },
+// Deadlines are deliberately omitted: their rows duplicate the critical path,
+// and every row already carries its own countdown pill.
+const SECTION_ORDER = ["critical", "drafts", "decisions"] as const;
+
+const SECTION_LABEL: Record<string, { title: string; unit: string }> = {
+  critical: { title: "Critical path", unit: "items" },
+  deadlines: { title: "Deadlines", unit: "dated" },
+  decisions: { title: "Decisions", unit: "open" },
+  drafts: { title: "Waiting on your approval", unit: "drafts" },
 };
 
 function readCollapsed(): boolean {
@@ -74,47 +62,68 @@ function readCollapsed(): boolean {
   }
 }
 
-function SectionBlock({ section, now }: { section: TodaySection; now: Date }) {
-  const meta = SECTION_META[section.kind];
-  const Icon = meta.icon;
-  // Deadlines and drafts stay compact; the critical path shows more.
-  const limit = section.kind === "critical" ? 5 : 4;
-  const items = section.items.slice(0, limit);
-  const overflow = section.items.length - items.length;
+/** Urgency class for a countdown pill. */
+function pillClass(label: string): string {
+  return isUrgentDeadline(label) ? "today-pill-now" : "today-pill-soon";
+}
+
+function SectionBlock({
+  section,
+  now,
+  accentAction,
+  expanded,
+  onToggle,
+}: {
+  section: TodaySection;
+  now: Date;
+  /** Text of the one row allowed to use the accent control. */
+  accentAction: string | null;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const meta = SECTION_LABEL[section.kind] ?? { title: section.title, unit: "items" };
+  const visible = expanded ? section.items : section.items.slice(0, PREVIEW_ROWS);
+  const hidden = section.items.length - visible.length;
 
   return (
-    <div className="space-y-1.5">
-      <div className={cn("flex items-center gap-1.5 text-xs font-semibold", meta.accent)}>
-        <Icon className="size-3.5" />
-        <span>{section.title}</span>
+    <div className="today-sect" data-kind={section.kind}>
+      <div className="today-sect__head">
+        <span className="sand-section-title">{meta.title}</span>
+        <span className="today-sect__count">
+          {section.items.length} {meta.unit}
+        </span>
       </div>
-      <ul className="space-y-1">
-        {items.map((item) => {
-          const badge = section.kind === "deadlines" ? deadlineLabel(item, now) : null;
-          const urgent = badge === "today" || badge === "tomorrow" || badge === "overdue";
+      <div className="sand-group">
+        {visible.map((item) => {
+          const badge = deadlineLabel(item.text, now);
+          const isAccent = accentAction !== null && item.text === accentAction;
           return (
-            <li key={item} className="flex items-start gap-2 text-[13px] leading-snug">
-              <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", meta.dot)} />
-              <span className="min-w-0 flex-1 text-foreground/90">{item}</span>
+            <div className="sand-row today-row" key={item.text}>
+              <span className="today-row__text">
+                <b>{item.lead}</b>
+                {item.detail ? <span className="today-row__detail"> {item.detail}</span> : null}
+              </span>
               {badge ? (
-                <span
-                  className={cn(
-                    "shrink-0 rounded-sm px-1 py-0.5 text-[10px] font-semibold tabular-nums",
-                    urgent
-                      ? "bg-destructive/12 text-destructive-foreground"
-                      : "bg-warning/12 text-warning-foreground",
-                  )}
-                >
-                  {badge}
-                </span>
+                <span className={`sand-pill ${pillClass(badge)}`}>{badge}</span>
+              ) : item.action ? (
+                <button type="button" className={`today-act${isAccent ? " today-act--go" : ""}`}>
+                  {item.action}
+                </button>
               ) : null}
-            </li>
+            </div>
           );
         })}
-        {overflow > 0 ? (
-          <li className="pl-3.5 text-[11px] text-muted-foreground">+{overflow} more</li>
+        {hidden > 0 ? (
+          <button type="button" className="sand-row today-row today-row--more" onClick={onToggle}>
+            <span className="today-row__more">Show {hidden} more</span>
+          </button>
         ) : null}
-      </ul>
+        {expanded && section.items.length > PREVIEW_ROWS ? (
+          <button type="button" className="sand-row today-row today-row--more" onClick={onToggle}>
+            <span className="today-row__more">Show less</span>
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -122,6 +131,7 @@ function SectionBlock({ section, now }: { section: TodaySection; now: Date }) {
 export function TodayPanel() {
   const [payload, setPayload] = useState<TodayPayload | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
@@ -136,7 +146,7 @@ export function TodayPanel() {
           setNow(new Date());
         }
       } catch {
-        // Local-only convenience panel: stay silent when the bridge is absent.
+        // Local-only convenience surface: stay silent when the bridge is absent.
       }
     };
     void load();
@@ -147,7 +157,7 @@ export function TodayPanel() {
     };
   }, []);
 
-  const toggle = () => {
+  const toggleCollapsed = () => {
     setCollapsed((previous) => {
       const next = !previous;
       try {
@@ -164,66 +174,59 @@ export function TodayPanel() {
   }
 
   const sections = payload.nowMarkdown ? parseNowSections(payload.nowMarkdown) : [];
-  const ordered = (["critical", "drafts", "deadlines", "decisions", "other"] as const)
-    .map((kind) => sections.find((s) => s.kind === kind))
-    .filter((s): s is TodaySection => s !== undefined);
-  const criticalCount = sections.find((s) => s.kind === "critical")?.items.length ?? 0;
+  const ordered = SECTION_ORDER.map((kind) => sections.find((s) => s.kind === kind)).filter(
+    (s): s is TodaySection => s !== undefined,
+  );
+  const critical = sections.find((s) => s.kind === "critical");
+  const urgentCount = critical?.items.length ?? 0;
+  // Exactly one accent in the panel: the first critical row that can be acted on.
+  const accentAction = critical?.items.find((item) => item.action !== null)?.text ?? null;
   const latestCard = payload.cards[0];
+  const dateLabel = now.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    weekday: "short",
+  });
 
   return (
-    <div
-      className={cn(
-        "fixed right-4 top-11 z-40 w-[340px] overflow-hidden rounded-2xl border bg-card/95 text-card-foreground shadow-lg shadow-black/5 backdrop-blur-md",
-        "not-dark:bg-clip-padding",
-      )}
-      data-testid="today-panel"
-    >
-      {/* Header */}
+    <div className="today-panel sand-rise" data-testid="today-panel">
       <button
         type="button"
-        onClick={toggle}
+        className="today-panel__head"
+        onClick={toggleCollapsed}
         aria-expanded={!collapsed}
-        className="group flex w-full items-center gap-2 border-b bg-muted/30 px-3.5 py-2.5 text-left transition-colors hover:bg-muted/50"
       >
-        <SparklesIcon className="size-4 text-primary" />
-        <span className="text-sm font-semibold tracking-tight">Today</span>
-        {criticalCount > 0 ? (
-          <span className="flex size-4.5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold tabular-nums text-white">
-            {criticalCount}
-          </span>
+        <span className="today-panel__title">Today</span>
+        {urgentCount > 0 ? (
+          <span className="sand-pill today-pill-now">{urgentCount} urgent</span>
         ) : null}
-        <span className="flex-1" />
-        <ChevronDownIcon
-          className={cn(
-            "size-4 text-muted-foreground transition-transform",
-            collapsed && "-rotate-90",
-          )}
-        />
+        <span className="today-panel__date">{dateLabel}</span>
       </button>
 
       {collapsed ? null : (
         <>
-          <ScrollArea className="max-h-[min(60vh,520px)]" scrollFade>
-            <div className="space-y-3.5 p-3.5">
-              {ordered.length > 0 ? (
-                ordered.map((section) => (
-                  <SectionBlock key={section.kind} section={section} now={now} />
-                ))
-              ) : (
-                <p className="text-[13px] text-muted-foreground">
-                  NOW.md is empty. Nothing waiting on you.
-                </p>
-              )}
-            </div>
-          </ScrollArea>
+          <div className="today-panel__body sand-stagger">
+            {ordered.length > 0 ? (
+              ordered.map((section) => (
+                <SectionBlock
+                  key={section.kind}
+                  section={section}
+                  now={now}
+                  accentAction={accentAction}
+                  expanded={expanded[section.kind] ?? false}
+                  onToggle={() =>
+                    setExpanded((prev) => ({ ...prev, [section.kind]: !prev[section.kind] }))
+                  }
+                />
+              ))
+            ) : (
+              <p className="today-panel__empty">Nothing waiting on you.</p>
+            )}
+          </div>
 
-          {/* Footer: live screen context from Dayflow */}
           {latestCard ? (
-            <div className="flex items-center gap-1.5 border-t bg-muted/20 px-3.5 py-2 text-[11px] text-muted-foreground">
-              <MonitorIcon className="size-3 shrink-0" />
-              <span className="truncate">
-                {latestCard.start}–{latestCard.end}: {latestCard.title}
-              </span>
+            <div className="today-panel__foot">
+              <span className="today-panel__foot-text">Now · {latestCard.title}</span>
             </div>
           ) : null}
         </>

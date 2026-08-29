@@ -9,10 +9,19 @@
 
 export type TodaySectionKind = "critical" | "drafts" | "deadlines" | "decisions" | "other";
 
+/** A single actionable line. `lead` renders bold, `detail` stays gray. */
+export interface TodayItem {
+  readonly text: string;
+  readonly lead: string;
+  readonly detail: string;
+  /** Verb for the row control, e.g. "Send". Null when nothing is actionable. */
+  readonly action: string | null;
+}
+
 export interface TodaySection {
   readonly kind: TodaySectionKind;
   readonly title: string;
-  readonly items: ReadonlyArray<string>;
+  readonly items: ReadonlyArray<TodayItem>;
 }
 
 /** Map a NOW.md "## ..." heading to a semantic kind via its emoji / words. */
@@ -34,9 +43,53 @@ function cleanHeading(heading: string): string {
     .trim();
 }
 
-/** Pull the first bold span or leading clause as a compact item label. */
+/**
+ * Infer the action verb for a row from its wording. The panel shows exactly
+ * one control per row, so this must pick the single most useful verb.
+ */
+function inferAction(raw: string, kind: TodaySectionKind): string | null {
+  const t = raw.toLowerCase();
+  if (kind === "decisions") return "Decide";
+  if (/never sent|not sent|unsent|sitting unsent/.test(t)) return "Send";
+  if (/he replied|she replied|replied to you|asked twice|asked for/.test(t)) return "Reply";
+  if (/not drafted|needs? a draft|rewrite/.test(t)) return "Draft";
+  if (kind === "drafts") return "Review";
+  return null;
+}
+
+/**
+ * Split a raw markdown item into a bold lead and a gray detail.
+ * Prefers an explicit **bold** span, else splits on the first em dash or
+ * sentence break, so every row reads as "subject — what about it".
+ */
+function splitItem(raw: string): { lead: string; detail: string } {
+  const bold = /\*\*(.+?)\*\*/.exec(raw);
+  if (bold?.[1]) {
+    const lead = bold[1].replace(/[.:\s]+$/, "");
+    const detail = raw
+      .replace(bold[0], "")
+      .replace(/\*\*/g, "")
+      .replace(/^[\s—.:-]+/, "")
+      .trim();
+    return { detail, lead };
+  }
+  const plain = raw.replace(/\*\*/g, "").replace(/`/g, "").trim();
+  const dash = plain.indexOf(" — ");
+  if (dash > 0) {
+    return { detail: plain.slice(dash + 3).trim(), lead: plain.slice(0, dash).trim() };
+  }
+  return { detail: "", lead: plain };
+}
+
+/** Strip inline markdown from a raw item. */
 function cleanItem(raw: string): string {
   return raw.replace(/\*\*/g, "").replace(/`/g, "").trim();
+}
+
+/** Build a structured item from a raw markdown line. */
+function makeItem(raw: string, kind: TodaySectionKind): TodayItem {
+  const { lead, detail } = splitItem(raw);
+  return { action: inferAction(raw, kind), detail, lead, text: cleanItem(raw) };
 }
 
 /**
@@ -46,7 +99,7 @@ function cleanItem(raw: string): string {
 export function parseNowSections(markdown: string): Array<TodaySection> {
   const lines = markdown.split("\n");
   const sections: Array<TodaySection> = [];
-  let current: { kind: TodaySectionKind; title: string; items: Array<string> } | null = null;
+  let current: { kind: TodaySectionKind; title: string; items: Array<TodayItem> } | null = null;
 
   const flush = () => {
     if (current && current.items.length > 0) {
@@ -64,7 +117,7 @@ export function parseNowSections(markdown: string): Array<TodaySection> {
 
     const bullet = /^\s*(?:\d+\.|[-*])\s+(.*)$/.exec(line);
     if (bullet?.[1]) {
-      current.items.push(cleanItem(bullet[1]));
+      current.items.push(makeItem(bullet[1], current.kind));
       continue;
     }
     // Table rows: "| label | where | blocked on |" — keep the first two cells.
@@ -74,7 +127,7 @@ export function parseNowSections(markdown: string): Array<TodaySection> {
         .map((c) => c.trim())
         .filter((c) => c.length > 0);
       if (cells.length >= 2 && cells[0]!.toLowerCase() !== "draft") {
-        current.items.push(cleanItem(`${cells[0]} — ${cells[1]}`));
+        current.items.push(makeItem(`**${cells[0]}** ${cells[1]}`, current.kind));
       }
     }
   }
@@ -87,7 +140,7 @@ export function parseNowSections(markdown: string): Array<TodaySection> {
  */
 export function extractCriticalLines(markdown: string): Array<string> {
   const critical = parseNowSections(markdown).find((s) => s.kind === "critical");
-  return (critical?.items ?? []).slice(0, 6);
+  return (critical?.items ?? []).slice(0, 6).map((item) => item.text);
 }
 
 const MONTHS: Record<string, number> = {
@@ -133,4 +186,11 @@ export function deadlineLabel(item: string, now: Date): string | null {
   if (days === 1) return "tomorrow";
   if (days <= 14) return `${days}d`;
   return null;
+}
+
+/** True when a countdown label should read as red rather than amber. */
+export function isUrgentDeadline(label: string): boolean {
+  if (label === "overdue" || label === "today" || label === "tomorrow") return true;
+  const days = /^(\d+)d$/.exec(label);
+  return days !== null && Number(days[1]) <= 2;
 }

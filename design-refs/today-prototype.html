@@ -1,0 +1,259 @@
+<!doctype html>
+<!--
+  Design prototype for the TODAY command center.
+  Rendered headlessly and screenshotted to judge the visual result before
+  porting into React. Uses the real sand.css and real NOW.md content.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./sand.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-size: 13px;
+        margin: 0;
+        background: var(--sand-chrome);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: var(--sand-text-primary);
+        display: grid;
+        place-items: start center;
+        min-height: 100vh;
+        padding: 28px;
+      }
+
+      /* ---- the panel ---- */
+      .today {
+        width: 384px;
+        background: var(--sand-editor);
+        border: 1px solid var(--sand-stroke-secondary);
+        border-radius: var(--sand-radius-dialog);
+        box-shadow: var(--sand-shadow-lg);
+        overflow: hidden;
+      }
+
+      .today__head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 13px 15px;
+        border-bottom: 1px solid var(--sand-stroke-tertiary);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .today__title {
+        font-size: var(--sand-font-lg);
+        font-weight: 560;
+        letter-spacing: var(--sand-tracking-lg);
+      }
+      .today__date {
+        color: var(--sand-text-tertiary);
+        font-size: var(--sand-font-xs);
+        margin-left: auto;
+      }
+
+      .today__body {
+        padding: 15px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .sect {
+        display: grid;
+        gap: 7px;
+      }
+      .sect__head {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .sect__count {
+        color: var(--sand-text-quaternary);
+        font-size: var(--sand-font-xs);
+        font-variant-numeric: tabular-nums;
+        margin-left: auto;
+      }
+
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 11px;
+        min-height: 32px;
+      }
+      .item__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--sand-font-base);
+        line-height: 17px;
+        color: var(--sand-text-secondary);
+      }
+      .item__text b {
+        color: var(--sand-text-primary);
+        font-weight: 550;
+      }
+
+      /* countdown urgency */
+      .pill--now {
+        --sand-pill-bg: color-mix(in srgb, var(--sand-red) 16%, transparent);
+        --sand-pill-fg: var(--sand-red);
+      }
+      .pill--soon {
+        --sand-pill-bg: color-mix(in srgb, var(--sand-yellow) 14%, transparent);
+        --sand-pill-fg: var(--sand-yellow);
+      }
+
+      .act {
+        display: inline-flex;
+        align-items: center;
+        height: 20px;
+        padding: 0 8px;
+        border-radius: var(--sand-radius-base);
+        border: 1px solid transparent;
+        background: var(--sand-fill-tertiary);
+        color: var(--sand-text-secondary);
+        font-size: var(--sand-font-xs);
+        font-weight: 500;
+        opacity: 0.9;
+        cursor: pointer;
+        transition: background-color 0.12s ease;
+        white-space: nowrap;
+      }
+      .act:hover {
+        background: var(--sand-fill-secondary);
+        color: var(--sand-text-primary);
+        opacity: 1;
+      }
+      .act--go {
+        background: color-mix(in srgb, var(--sand-accent) 18%, transparent);
+        border-color: color-mix(in srgb, var(--sand-accent) 34%, transparent);
+        color: var(--sand-accent);
+      }
+      .act--go:hover {
+        background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
+      }
+
+      .foot {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-top: 1px solid var(--sand-stroke-tertiary);
+        background: rgba(0, 0, 0, 0.14);
+        color: var(--sand-text-tertiary);
+        font-size: var(--sand-font-xs);
+      }
+      .foot__meter {
+        flex: 1;
+        max-width: 120px;
+        margin-left: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="today sand-rise">
+      <div class="today__head">
+        <span class="today__title">Today</span>
+        <span class="sand-pill pill--now">4 urgent</span>
+        <span class="today__date">Sat Aug 29</span>
+      </div>
+
+      <div class="today__body sand-stagger">
+        <!-- CRITICAL -->
+        <div class="sect">
+          <div class="sect__head">
+            <span class="sand-section-title">Critical path</span>
+            <span class="sect__count">4 items</span>
+          </div>
+          <div class="sand-group">
+            <div class="sand-row item">
+              <span class="item__text"
+                ><b>IECBES submission</b> — manuscript + portal creds missing</span
+              >
+              <span class="sand-pill pill--now">2d</span>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text"><b>Zaidi co-author email</b> never sent</span>
+              <button class="act act--go">Send</button>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text"><b>Boom recruiter</b> asked twice</span>
+              <button class="act">Reply</button>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text"><b>Plasma Gate 1</b> — no hardware yet</span>
+              <span class="sand-pill pill--soon">5d</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DRAFTS -->
+        <div class="sect">
+          <div class="sect__head">
+            <span class="sand-section-title">Waiting on your approval</span>
+            <span class="sect__count">10 drafts</span>
+          </div>
+          <div class="sand-group">
+            <div class="sand-row item">
+              <span class="item__text"
+                >Linderman follow-up
+                <span style="color: var(--sand-text-quaternary)">· held</span></span
+              >
+              <button class="act">Review</button>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text"
+                >Robert Fisher reply
+                <span style="color: var(--sand-text-quaternary)">· he replied</span></span
+              >
+              <button class="act">Draft</button>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text">Todd Coleman nudge</span>
+              <button class="act">Review</button>
+            </div>
+            <div class="sand-row item" data-interactive>
+              <span class="item__text" style="color: var(--sand-text-tertiary)">Show 7 more</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECISIONS -->
+        <div class="sect">
+          <div class="sect__head">
+            <span class="sand-section-title">Decisions</span>
+            <span class="sect__count">6 open</span>
+          </div>
+          <div class="sand-group">
+            <div class="sand-row item">
+              <span class="item__text">Coleman archive — keep or kill?</span>
+              <button class="act">Decide</button>
+            </div>
+            <div class="sand-row item">
+              <span class="item__text">Neurologist — Aug 3 reported?</span>
+              <button class="act">Decide</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>Now · Obsidian, research leads</span>
+        <span style="margin-left: auto; display: flex; align-items: center; gap: 7px">
+          <span style="color: var(--sand-text-quaternary)">paper 42%</span>
+          <span class="foot__meter" style="width: 64px; max-width: 64px"
+            ><span class="sand-meter-track"
+              ><span class="sand-meter-fill" style="width: 42%"></span></span
+          ></span>
+        </span>
+      </div>
+    </div>
+  </body>
+</html>
