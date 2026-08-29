@@ -10,6 +10,7 @@ import { useCallback } from "react";
 
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
+import { TodayPanel } from "../TodayPanel";
 import { buildBriefing } from "./briefing";
 import type { EmployeeSummary } from "./summarize";
 import { TeamPanel } from "./TeamPanel";
@@ -34,4 +35,25 @@ export function TeamPanelConnected() {
   );
 
   return <TeamPanel onOpenEmployee={(summary) => void openConversation(summary)} />;
+}
+
+/**
+ * Queue with its row actions wired: Review / Reply / Draft / Decide open a
+ * conversation with the item's owning employee, briefed on that one item.
+ */
+export function TodayPanelConnected() {
+  const { handleNewThread, defaultProjectRef } = useHandleNewThread();
+  const setPrompt = useComposerDraftStore((store) => store.setPrompt);
+
+  const openItem = useCallback(
+    async (briefing: string) => {
+      if (!defaultProjectRef) return;
+      const opened = await handleNewThread(defaultProjectRef);
+      if (!opened?.draftId) return;
+      setPrompt(opened.draftId, briefing);
+    },
+    [defaultProjectRef, handleNewThread, setPrompt],
+  );
+
+  return <TodayPanel onOpenItem={(briefing) => void openItem(briefing)} />;
 }

@@ -13,8 +13,10 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { APP_BASE_NAME, APP_DISPLAY_NAME, APP_STAGE_LABEL } from "../branding";
 import { resolveServerBackedAppDisplayName } from "../branding.logic";
 import { AppSidebarLayout } from "../components/AppSidebarLayout";
-import { TodayPanel } from "../components/TodayPanel";
-import { TeamPanelConnected } from "../components/employees/TeamPanelConnected";
+import {
+  TeamPanelConnected,
+  TodayPanelConnected,
+} from "../components/employees/TeamPanelConnected";
 import { ConnectionBar } from "../components/connections/ConnectionBar";
 import { CommandPalette } from "../components/CommandPalette";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
@@ -129,7 +131,7 @@ function RootRouteView() {
         <div className="sand-rail">
           <ConnectionBar />
           <TeamPanelConnected />
-          <TodayPanel />
+          <TodayPanelConnected />
         </div>
         <Outlet />
       </AppSidebarLayout>

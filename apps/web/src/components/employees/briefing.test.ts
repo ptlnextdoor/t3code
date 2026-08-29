@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { buildBriefing, conversationTitle, historyQuery } from "./briefing";
+import { buildBriefing, buildItemBriefing, conversationTitle, historyQuery } from "./briefing";
 import { ROSTER } from "./roster";
 import type { EmployeeSummary } from "./summarize";
 
@@ -65,6 +65,24 @@ describe("buildBriefing", () => {
   it("omits the draft line when there are no drafts", () => {
     const text = buildBriefing(summary({ draftCount: 0 }));
     assert.notInclude(text, "drafts are waiting");
+  });
+});
+
+describe("buildItemBriefing", () => {
+  it("briefs the owner on one item with a verb, not its whole desk", () => {
+    const text = buildItemBriefing(paper, "Zaidi sign-off email never sent", "Reply");
+    assert.include(text, "You are Paper");
+    assert.include(text, "Zaidi sign-off email never sent");
+    assert.include(text, "Draft the reply");
+    // The point of the employee layer: produce the thing, not a status memo.
+    assert.include(text, "Do not write me a report");
+  });
+
+  it("maps each action to its own instruction", () => {
+    const item = "Coleman archive: keep or kill?";
+    assert.include(buildItemBriefing(paper, item, "Decide"), "options");
+    assert.include(buildItemBriefing(paper, item, "Draft"), "Write the draft");
+    assert.include(buildItemBriefing(paper, item, "Review"), "blocking it");
   });
 });
 

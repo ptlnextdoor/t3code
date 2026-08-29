@@ -77,6 +77,33 @@ export function historyQuery(employee: Employee): string {
   return [...employee.topics, ...employee.keywords.slice(0, 4)].join(" OR ");
 }
 
+/**
+ * Briefing for one specific escalation, used when the human clicks a row
+ * action (Review / Reply / Draft / Decide) in the Queue. The owning employee
+ * gets the item and a verb, not its whole desk: the human asked for this one
+ * thing to move.
+ */
+export function buildItemBriefing(employee: Employee, item: string, action: string): string {
+  const verb =
+    action === "Reply"
+      ? "Draft the reply for me to approve."
+      : action === "Draft"
+        ? "Write the draft for me to approve."
+        : action === "Decide"
+          ? "Lay out the decision: the options, what you would pick, and why, in five sentences or fewer."
+          : "Review it and tell me exactly what is blocking it from going out.";
+  return [
+    `You are ${employee.name}, and this is your job: ${employee.role}`,
+    "",
+    `I need you to handle one specific thing:`,
+    `> ${item}`,
+    "",
+    verb,
+    "Search my past sessions and drafts for context before asking me anything.",
+    "Do not write me a report. Produce the thing itself.",
+  ].join("\n");
+}
+
 /** Truncate a list of escalations for display inside a briefing. */
 export function summarizeItems(items: ReadonlyArray<{ text: string }>): Array<string> {
   return items.slice(0, MAX_LISTED_ITEMS).map((item) => item.text);

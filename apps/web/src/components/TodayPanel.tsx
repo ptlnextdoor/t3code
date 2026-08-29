@@ -27,6 +27,8 @@ import {
   parseNowSections,
   type TodaySection,
 } from "./todayPanel.logic";
+import { buildItemBriefing } from "./employees/briefing";
+import { employeeById, ownerOf } from "./employees/roster";
 
 interface TodayTimelineCard {
   readonly day: string;
@@ -202,7 +204,13 @@ function SectionBlock({
   );
 }
 
-export function TodayPanel() {
+export function TodayPanel({
+  onOpenItem,
+}: {
+  /** Open a new conversation pre-filled with this briefing. Injected because
+   *  thread-opening needs router context the panel must not depend on. */
+  onOpenItem?: (briefing: string) => void;
+} = {}) {
   const [payload, setPayload] = useState<TodayPayload | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -241,9 +249,16 @@ export function TodayPanel() {
    */
   const runAction = async (item: { text: string; action: string }) => {
     if (item.action !== "Send") {
-      // Review / Reply / Decide are human tasks; surface them rather than
-      // pretending an agent already handled it.
-      setNotice(`Open ${item.text.slice(0, 48)} to continue.`);
+      // Review / Reply / Draft / Decide open a conversation with the owning
+      // employee, briefed on this one item. The old behavior was a dead-end
+      // notice, which made every non-Send button useless.
+      const ownerId = ownerOf(item.text);
+      const employee = ownerId ? employeeById(ownerId) : undefined;
+      if (!employee || !onOpenItem) {
+        setNotice(`No owner found for: ${item.text.slice(0, 48)}`);
+        return;
+      }
+      onOpenItem(buildItemBriefing(employee, item.text, item.action));
       return;
     }
 
