@@ -558,3 +558,150 @@ body:has(.today-panel:not([data-collapsed])) [data-slot="toast-viewport"] {
   contain: paint;
   isolation: isolate;
 }
+
+/* ---------------------------------------------------------------------- */
+/* TEAM: the employee roster                                              */
+/* Matches design-refs/team-panel.png                                     */
+/* ---------------------------------------------------------------------- */
+
+.team-panel {
+  display: flex;
+  flex-direction: column;
+  width: 384px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  contain: paint;
+  isolation: isolate;
+  background: var(--sand-editor);
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog);
+  box-shadow: var(--sand-shadow-lg);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  line-height: var(--sand-line-base);
+  letter-spacing: var(--sand-tracking-base);
+}
+
+.team-panel__head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--sand-stroke-tertiary);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.team-panel__title {
+  font-size: var(--sand-font-lg);
+  font-weight: 560;
+  letter-spacing: var(--sand-tracking-lg);
+}
+
+.team-panel__meta {
+  margin-left: auto;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+}
+
+.team-panel__body {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* One employee. Single column: an avatar column carried no information and
+   misaligned against multi-line asks. */
+.emp {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  padding: 9px 12px 9px 13px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-row);
+  background: var(--sand-fill-quinary);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.emp:hover {
+  background: var(--sand-fill-quaternary);
+  border-color: var(--sand-stroke-primary);
+}
+
+.emp:active {
+  transform: scale(var(--sand-press-scale));
+}
+
+/* The single urgency signal: a state bar on the leading edge. */
+.emp::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--emp-state, transparent);
+}
+
+.emp__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 560;
+}
+
+.emp__name .sand-pill,
+.emp__idle {
+  margin-left: auto;
+}
+
+.emp__idle {
+  color: var(--sand-text-quaternary);
+  font-size: var(--sand-font-xs);
+}
+
+/* The payload. Never truncated to one line; clamps at two. */
+.emp__ask {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 1px;
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-base);
+  line-height: 17px;
+}
+
+.emp__ask b {
+  color: var(--sand-text-primary);
+  font-weight: 550;
+}
+
+.emp__ask-empty {
+  color: var(--sand-text-tertiary);
+}
+
+.emp__status {
+  margin-top: 2px;
+  color: var(--sand-text-quaternary);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emp-pill-calm {
+  --sand-pill-bg: var(--sand-fill-tertiary);
+  --sand-pill-fg: var(--sand-text-tertiary);
+}

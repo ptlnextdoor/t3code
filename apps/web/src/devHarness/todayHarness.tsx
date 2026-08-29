@@ -13,11 +13,15 @@ import { createRoot } from "react-dom/client";
 import "../index.css";
 import "../sand.css";
 import { TodayPanel } from "../components/TodayPanel";
+import { TeamPanel } from "../components/employees/TeamPanel";
 
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     <StrictMode>
+      <div style={{ display: "flex", gap: 24, padding: 24, alignItems: "flex-start" }}>
+        <TeamPanel />
+      </div>
       <TodayPanel />
     </StrictMode>,
   );

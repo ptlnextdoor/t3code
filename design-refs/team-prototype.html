@@ -1,0 +1,226 @@
+<!doctype html>
+<!--
+  Design prototype: the employee roster surface.
+  Question it must answer in one glance: "who is blocked on me, and on what?"
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./sand.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-size: 13px;
+        margin: 0;
+        background: var(--sand-chrome);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: var(--sand-text-primary);
+        display: grid;
+        place-items: start center;
+        min-height: 100vh;
+        padding: 28px;
+      }
+      .team {
+        width: 384px;
+        background: var(--sand-editor);
+        border: 1px solid var(--sand-stroke-secondary);
+        border-radius: var(--sand-radius-dialog);
+        box-shadow: var(--sand-shadow-lg);
+        overflow: hidden;
+      }
+      .team__head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--sand-stroke-tertiary);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .team__title {
+        font-size: var(--sand-font-lg);
+        font-weight: 560;
+        letter-spacing: var(--sand-tracking-lg);
+      }
+      .team__meta {
+        margin-left: auto;
+        color: var(--sand-text-tertiary);
+        font-size: var(--sand-font-xs);
+      }
+      .team__body {
+        padding: 14px;
+        display: grid;
+        gap: 7px;
+      }
+
+      /* An employee card. The avatar is a monogram, not an uploaded image:
+         identity comes from the name and the work, not decoration. */
+      .emp {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+        align-items: center;
+        padding: 9px 12px 9px 13px;
+        border: 1px solid var(--sand-stroke-secondary);
+        border-radius: var(--sand-radius-row);
+        background: var(--sand-fill-quinary);
+        cursor: pointer;
+        transition:
+          background-color 0.12s ease,
+          border-color 0.12s ease;
+      }
+      .emp:hover {
+        background: var(--sand-fill-quaternary);
+        border-color: var(--sand-stroke-primary);
+      }
+      /* One signal, one place: a state bar on the leading edge. */
+      .emp::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        border-radius: 0 2px 2px 0;
+        background: var(--emp-state, transparent);
+      }
+
+      .emp__main {
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+      }
+      .emp__name {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-weight: 560;
+      }
+      .emp__name .sand-pill,
+      .emp__name .idle {
+        margin-left: auto;
+      }
+      .emp__status {
+        color: var(--sand-text-tertiary);
+        font-size: var(--sand-font-xs);
+        line-height: var(--sand-line-xs);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .emp__ask {
+        color: var(--sand-text-secondary);
+        font-size: var(--sand-font-base);
+        line-height: 17px;
+        margin-top: 1px;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+      .emp__ask b {
+        color: var(--sand-text-primary);
+        font-weight: 550;
+      }
+
+      .emp__right {
+        display: none;
+      }
+      .idle {
+        color: var(--sand-text-quaternary);
+        font-size: var(--sand-font-xs);
+      }
+
+      .pill--now {
+        --sand-pill-bg: color-mix(in srgb, var(--sand-red) 16%, transparent);
+        --sand-pill-fg: var(--sand-red);
+      }
+      .pill--soon {
+        --sand-pill-bg: color-mix(in srgb, var(--sand-yellow) 14%, transparent);
+        --sand-pill-fg: var(--sand-yellow);
+      }
+      .pill--calm {
+        --sand-pill-bg: var(--sand-fill-tertiary);
+        --sand-pill-fg: var(--sand-text-tertiary);
+      }
+
+      .foot {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-top: 1px solid var(--sand-stroke-tertiary);
+        background: rgba(0, 0, 0, 0.14);
+        color: var(--sand-text-tertiary);
+        font-size: var(--sand-font-xs);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="team sand-rise">
+      <div class="team__head">
+        <span class="team__title">Team</span>
+        <span class="sand-pill pill--now">3 need you</span>
+        <span class="team__meta">5 working</span>
+      </div>
+
+      <div class="team__body sand-stagger">
+        <div class="emp" style="--emp-state: var(--sand-red)">
+          <span class="emp__main">
+            <span class="emp__name">Paper<span class="sand-pill pill--now">2d</span></span>
+            <span class="emp__ask"
+              ><b>Submit IECBES</b> — needs the manuscript file and portal credentials</span
+            >
+            <span class="emp__status">131 sessions · last active 2h ago</span>
+          </span>
+        </div>
+
+        <div class="emp" style="--emp-state: var(--sand-red)">
+          <span class="emp__main">
+            <span class="emp__name"
+              >Outreach<span class="sand-pill pill--calm">4 drafts</span></span
+            >
+            <span class="emp__ask"><b>4 emails</b> waiting on your approval</span>
+            <span class="emp__status">16 sessions · blocked on Paper's submission</span>
+          </span>
+        </div>
+
+        <div class="emp" style="--emp-state: var(--sand-red)">
+          <span class="emp__main">
+            <span class="emp__name">Apps<span class="sand-pill pill--now">asked 2x</span></span>
+            <span class="emp__ask"
+              ><b>Boom recruiter</b> asked twice for your interview availability</span
+            >
+            <span class="emp__status">68 sessions · SAT in 7d</span>
+          </span>
+        </div>
+
+        <div class="emp" style="--emp-state: var(--sand-yellow)">
+          <span class="emp__main">
+            <span class="emp__name">Bench<span class="sand-pill pill--soon">5d</span></span>
+            <span class="emp__ask">Gate 1 hardware — borrow vs build still undecided</span>
+            <span class="emp__status">291 sessions · last active 6h ago</span>
+          </span>
+        </div>
+
+        <div class="emp">
+          <span class="emp__main">
+            <span class="emp__name">Ops<span class="idle">idle</span></span>
+            <span class="emp__ask">Disk refills to 100%; neurologist follow-up unconfirmed</span>
+            <span class="emp__status">196 sessions · nothing urgent</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="foot"><span>4 areas archived · 795 sessions searchable, unstaffed</span></div>
+    </div>
+  </body>
+</html>
