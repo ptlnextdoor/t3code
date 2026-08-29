@@ -131,9 +131,19 @@ export function parseNowSections(markdown: string): Array<TodaySection> {
     }
     if (!current) continue;
 
-    const bullet = /^\s*(?:\d+\.|[-*])\s+(.*)$/.exec(line);
-    if (bullet?.[1]) {
-      current.items.push(bullet[1]);
+    // Bullets, numbered items, and bold-wrapped numbered items ("**1. ...**").
+    // The bold form is how NOW.md writes its top-level critical items; missing
+    // it made the panel show only the explanatory sub-bullets.
+    const bullet = /^(\s*)(?:\*\*)?(?:\d+\.|[-*])\s+(.*)$/.exec(line);
+    if (bullet?.[2] !== undefined) {
+      // An indented bullet beneath an open item is detail of that item, not a
+      // separate escalation. Top-level bullets (no indent) start a new item.
+      if (openBullet && bullet[1]!.length > 0 && current.items.length > 0) {
+        const last = current.items.length - 1;
+        current.items[last] = `${current.items[last]!} ${bullet[2]!}`;
+      } else {
+        current.items.push(bullet[2]!);
+      }
       openBullet = true;
       continue;
     }

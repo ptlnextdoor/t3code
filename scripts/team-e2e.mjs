@@ -46,9 +46,15 @@ for (const line of nowMarkdown.split("\n")) {
     continue;
   }
   if (!cur) continue;
-  const b = /^\s*(?:\d+\.|[-*])\s+(.*)$/.exec(line);
+  const b = /^(\s*)(?:\*\*)?(?:\d+\.|[-*])\s+(.*)$/.exec(line);
   if (b) {
-    sections[cur].push(b[1].replace(/\*\*/g, ""));
+    const text = b[2].replace(/\*\*/g, "");
+    // Indented sub-bullets are detail of the item above, not new escalations.
+    if (openBullet && b[1].length > 0 && sections[cur].length > 0) {
+      sections[cur][sections[cur].length - 1] += ` ${text}`;
+    } else {
+      sections[cur].push(text);
+    }
     openBullet = true;
     continue;
   }

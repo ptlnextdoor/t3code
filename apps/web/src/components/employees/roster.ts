@@ -41,7 +41,18 @@ export interface Employee {
 export const ROSTER: ReadonlyArray<Employee> = [
   {
     id: "paper",
-    keywords: ["iecbes", "zaidi", "manuscript", "arxiv", "preprint", "co-author"],
+    keywords: [
+      "iecbes",
+      "zaidi",
+      "manuscript",
+      "arxiv",
+      "preprint",
+      "co-author",
+      "ieee",
+      "v8",
+      "conference deadline",
+      "the conference",
+    ],
     name: "Paper",
     role: "Gets the EEG manuscript submitted and keeps co-authors aligned.",
     topics: ["zaidi-paper"],

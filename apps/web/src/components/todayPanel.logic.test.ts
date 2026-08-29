@@ -117,6 +117,35 @@ describe("parseNowSections", () => {
     );
   });
 
+  it("captures bold-wrapped numbered items, the NOW.md top-level form", () => {
+    // NOW.md writes its top-level critical items as "**1. ...**". Missing this
+    // form made the panel show only the explanatory sub-bullets beneath it.
+    const bold = [
+      "## 🔴 Critical",
+      "**1. IECBES submission. Deadline verified: Mon Aug 31.**",
+      "- The portal is https://edas.info/N34779.",
+    ].join("\n");
+    const items = parseNowSections(bold)[0]?.items ?? [];
+    assert.strictEqual(items.length, 2);
+    assert.include(items[0]!.text, "IECBES submission");
+  });
+
+  it("folds indented sub-bullets into their parent item", () => {
+    // Sub-bullets are detail of the item above them, not separate escalations.
+    // Splitting them out made context lines route to no employee at all.
+    const nested = [
+      "## 🔴 Critical",
+      "- IECBES submission is the gate.",
+      "  - The portal is https://edas.info/N34779.",
+      "  - The deadline was extended by the conference.",
+      "- Boom recruiter asked twice.",
+    ].join("\n");
+    const items = parseNowSections(nested)[0]?.items ?? [];
+    assert.strictEqual(items.length, 2);
+    assert.include(items[0]!.text, "portal");
+    assert.include(items[0]!.text, "extended");
+  });
+
   it("drops empty sections", () => {
     const sections = parseNowSections("## Empty\n\n## 🔴 Critical\n- one");
     assert.deepStrictEqual(
