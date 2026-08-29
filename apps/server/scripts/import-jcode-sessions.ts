@@ -62,23 +62,38 @@ interface CliOptions {
   readonly limit: number | undefined;
   readonly minMessages: number;
   readonly session: string | undefined;
+  readonly idsFile: string | undefined;
 }
 
 function parseArgs(argv: ReadonlyArray<string>): CliOptions {
   let limit: number | undefined;
   let minMessages = 2;
   let session: string | undefined;
+  let idsFile: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--limit") limit = Number.parseInt(argv[++i] ?? "", 10);
     else if (arg === "--min-messages") minMessages = Number.parseInt(argv[++i] ?? "2", 10);
     else if (arg === "--session") session = argv[++i];
+    else if (arg === "--ids-file") idsFile = argv[++i];
   }
-  return { limit, minMessages, session };
+  return { limit, minMessages, session, idsFile };
+}
+
+/** Read an allow-list of session ids (one per line) if --ids-file was given. */
+function loadIdAllowList(idsFile: string | undefined): ReadonlySet<string> | undefined {
+  if (!idsFile) return undefined;
+  const text = NodeFS.readFileSync(idsFile, "utf8");
+  const ids = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  return new Set(ids);
 }
 
 /** Load candidate jcode sessions, newest first. */
 function loadCandidates(options: CliOptions): ReadonlyArray<JcodeSessionFile> {
+  const allowList = loadIdAllowList(options.idsFile);
   const dir = NodePath.join(NodeOS.homedir(), ".jcode", "sessions");
   const entries = NodeFS.readdirSync(dir)
     .filter((name) => name.startsWith("session_") && name.endsWith(".json"))
@@ -103,9 +118,10 @@ function loadCandidates(options: CliOptions): ReadonlyArray<JcodeSessionFile> {
       continue;
     }
     if (typeof parsed.id !== "string" || !parsed.id) continue;
+    if (allowList && !allowList.has(parsed.id)) continue;
     if (options.session && parsed.id !== options.session) continue;
     const messageCount = Array.isArray(parsed.messages) ? parsed.messages.length : 0;
-    if (!options.session && messageCount < options.minMessages) continue;
+    if (!options.session && !allowList && messageCount < options.minMessages) continue;
     out.push(parsed);
     if (options.limit !== undefined && out.length >= options.limit) break;
   }
