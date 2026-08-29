@@ -14,12 +14,14 @@ import "../index.css";
 import "../sand.css";
 import { TodayPanel } from "../components/TodayPanel";
 import { TeamPanel } from "../components/employees/TeamPanel";
+import { ConnectionBar } from "../components/connections/ConnectionBar";
 
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     <StrictMode>
       <div className="sand-rail">
+        <ConnectionBar />
         <TeamPanel />
         <TodayPanel />
       </div>

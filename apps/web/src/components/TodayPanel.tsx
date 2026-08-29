@@ -16,6 +16,12 @@ import { useEffect, useState } from "react";
 
 import { resolvePrimaryEnvironmentHttpUrl } from "../environments/primary/target";
 import {
+  canSendMail,
+  unavailableReason,
+  useConnections,
+  type ConnectionHealth,
+} from "./connections/useConnections";
+import {
   deadlineLabel,
   isUrgentDeadline,
   parseNowSections,
@@ -59,6 +65,47 @@ const SECTION_LABEL: Record<string, { title: string; unit: string }> = {
   drafts: { title: "Waiting on your approval", unit: "drafts" },
 };
 
+interface DraftSummary {
+  readonly id: string;
+  readonly to: string;
+  readonly subject: string;
+  readonly snippet: string;
+}
+
+/**
+ * Find the Gmail draft an escalation refers to.
+ *
+ * NOW.md names people ("Linderman follow-up"), not draft ids, so match on the
+ * proper nouns in the item text against the draft's recipient and subject.
+ * Returns null rather than guessing, because sending the wrong email is far
+ * worse than sending nothing.
+ */
+export async function findDraftFor(
+  itemText: string,
+  fetchDrafts: () => Promise<Array<DraftSummary>> = defaultFetchDrafts,
+): Promise<DraftSummary | null> {
+  const drafts = await fetchDrafts();
+  if (drafts.length === 0) return null;
+  // Words worth matching on: capitalised names, not common words.
+  const names = (itemText.match(/[A-Z][a-z]{3,}/g) ?? []).map((w) => w.toLowerCase());
+  if (names.length === 0) return null;
+
+  let best: { draft: DraftSummary; score: number } | null = null;
+  for (const draft of drafts) {
+    const haystack = `${draft.to} ${draft.subject}`.toLowerCase();
+    const score = names.filter((name) => haystack.includes(name)).length;
+    if (score > 0 && (best === null || score > best.score)) best = { draft, score };
+  }
+  return best?.draft ?? null;
+}
+
+async function defaultFetchDrafts(): Promise<Array<DraftSummary>> {
+  const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/connections/drafts"));
+  if (!response.ok) return [];
+  const data = (await response.json()) as { drafts?: Array<DraftSummary> };
+  return data.drafts ?? [];
+}
+
 function readCollapsed(): boolean {
   try {
     return localStorage.getItem(COLLAPSED_STORAGE_KEY) === "1";
@@ -78,6 +125,9 @@ function SectionBlock({
   accentAction,
   expanded,
   onToggle,
+  gmail,
+  onAct,
+  busy,
 }: {
   section: TodaySection;
   now: Date;
@@ -85,6 +135,9 @@ function SectionBlock({
   accentAction: string | null;
   expanded: boolean;
   onToggle: () => void;
+  gmail: ConnectionHealth | null;
+  onAct: (item: { text: string; action: string }) => void;
+  busy: string | null;
 }) {
   const meta = SECTION_LABEL[section.kind] ?? { title: section.title, unit: "items" };
   const visible = expanded ? section.items : section.items.slice(0, PREVIEW_ROWS);
@@ -111,9 +164,25 @@ function SectionBlock({
               {badge ? (
                 <span className={`sand-pill ${pillClass(badge)}`}>{badge}</span>
               ) : item.action ? (
-                <button type="button" className={`today-act${isAccent ? " today-act--go" : ""}`}>
-                  {item.action}
-                </button>
+                (() => {
+                  // Mail actions require a live connection. Anything that
+                  // cannot work is disabled WITH A REASON, never dead on click.
+                  const needsMail = item.action === "Send" || item.action === "Reply";
+                  const blocked = needsMail && !canSendMail(gmail);
+                  const reason = blocked ? unavailableReason(gmail) : null;
+                  const isBusy = busy === item.text;
+                  return (
+                    <button
+                      type="button"
+                      className={`today-act${isAccent && !blocked ? " today-act--go" : ""}`}
+                      disabled={blocked || isBusy}
+                      title={reason ?? undefined}
+                      onClick={() => onAct({ action: item.action!, text: item.text })}
+                    >
+                      {isBusy ? "…" : item.action}
+                    </button>
+                  );
+                })()
               ) : null}
             </div>
           );
@@ -138,6 +207,9 @@ export function TodayPanel() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState<Date>(() => new Date());
+  const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const { gmail } = useConnections();
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +233,45 @@ export function TodayPanel() {
       clearInterval(timer);
     };
   }, []);
+
+  /**
+   * Perform a row action. Sending mail is irreversible, so it requires an
+   * explicit confirmation naming the recipient before anything leaves the
+   * outbox. Everything else opens the relevant surface.
+   */
+  const runAction = async (item: { text: string; action: string }) => {
+    if (item.action !== "Send") {
+      // Review / Reply / Decide are human tasks; surface them rather than
+      // pretending an agent already handled it.
+      setNotice(`Open ${item.text.slice(0, 48)} to continue.`);
+      return;
+    }
+
+    const draft = await findDraftFor(item.text);
+    if (!draft) {
+      setNotice("Could not find a matching Gmail draft for this item.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Send this email now?\n\nTo: ${draft.to}\nSubject: ${draft.subject}\n\nThis cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setBusy(item.text);
+    try {
+      const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/connections/send"), {
+        body: JSON.stringify({ confirm: true, draftId: draft.id }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const result = (await response.json()) as { ok: boolean; detail: string };
+      setNotice(result.ok ? `Sent to ${draft.to}.` : result.detail);
+    } catch {
+      setNotice("Could not reach Gmail. Nothing was sent.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const toggleCollapsed = () => {
     setCollapsed((previous) => {
@@ -224,6 +335,9 @@ export function TodayPanel() {
                   onToggle={() =>
                     setExpanded((prev) => ({ ...prev, [section.kind]: !prev[section.kind] }))
                   }
+                  gmail={gmail}
+                  busy={busy}
+                  onAct={(item) => void runAction(item)}
                 />
               ))
             ) : (

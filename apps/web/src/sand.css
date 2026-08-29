@@ -719,3 +719,70 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   --sand-pill-bg: var(--sand-fill-tertiary);
   --sand-pill-fg: var(--sand-text-tertiary);
 }
+
+/* ---------------------------------------------------------------------- */
+/* Connection status                                                      */
+/* ---------------------------------------------------------------------- */
+
+.conn-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-row);
+  background: var(--sand-editor);
+  box-shadow: var(--sand-shadow-sm);
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+}
+
+.conn-bar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sand-radius-full);
+  background: var(--conn-dot, var(--sand-text-quaternary));
+  flex-shrink: 0;
+}
+
+.conn-bar__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conn-bar__action {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 9px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--sand-accent) 34%, transparent);
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-accent) 18%, transparent);
+  color: var(--sand-accent);
+  font-size: var(--sand-font-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.conn-bar__action:hover {
+  background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
+}
+
+/* Disabled controls must read as unavailable, never as broken. */
+.today-act:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.today-act:disabled:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-secondary);
+}
+
+.today-panel__foot--notice {
+  color: var(--sand-text-secondary);
+}

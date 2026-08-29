@@ -15,6 +15,7 @@ import { resolveServerBackedAppDisplayName } from "../branding.logic";
 import { AppSidebarLayout } from "../components/AppSidebarLayout";
 import { TodayPanel } from "../components/TodayPanel";
 import { TeamPanel } from "../components/employees/TeamPanel";
+import { ConnectionBar } from "../components/connections/ConnectionBar";
 import { CommandPalette } from "../components/CommandPalette";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
 import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
@@ -126,6 +127,7 @@ function RootRouteView() {
     <CommandPalette>
       <AppSidebarLayout>
         <div className="sand-rail">
+          <ConnectionBar />
           <TeamPanel />
           <TodayPanel />
         </div>
