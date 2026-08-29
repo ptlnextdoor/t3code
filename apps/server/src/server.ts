@@ -23,6 +23,12 @@ import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import { websocketRpcRouteLayer } from "./ws.ts";
 import { todayRouteLayer } from "./today/TodayRoute.ts";
+import {
+  connectionDraftsRouteLayer,
+  connectionSendRouteLayer,
+  connectionsRouteLayer,
+  startConnectionKeeper,
+} from "./connections/ConnectionRoutes.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import { pullRequestHttpApiLayer } from "./pullRequest/http.ts";
 import * as PullRequestProviderRegistry from "./pullRequest/PullRequestProviderRegistry.ts";
@@ -468,6 +474,9 @@ export const makeRoutesLayer = Layer.mergeAll(
     attachmentUploadRouteLayer,
     staticAndDevRouteLayer,
     todayRouteLayer,
+    connectionsRouteLayer,
+    connectionDraftsRouteLayer,
+    connectionSendRouteLayer,
     websocketRpcRouteLayer,
   ),
   McpHttpServer.layer.pipe(Layer.provide(McpSessionRegistry.layer)),
@@ -675,8 +684,20 @@ export const makeServerLayer = Layer.unwrap(
     const routesLayer = HttpRouter.serve(makeRoutesLayer.pipe(Layer.provide(launcherLayer)), {
       disableLogger: !config.logWebSocketEvents,
     }).pipe(Layer.tap(() => Deferred.succeed(routesReady, undefined).pipe(Effect.orDie)));
+    /*
+     * Keep third-party connections alive for as long as the server runs. This
+     * is what stops Gmail quietly expiring overnight and leaving the user with
+     * a dead Send button and no explanation.
+     */
+    const connectionKeeperLayer = Layer.effectDiscard(
+      Effect.acquireRelease(
+        Effect.sync(() => startConnectionKeeper()),
+        (stop) => Effect.sync(() => stop()),
+      ),
+    );
     const serverApplicationLayer = Layer.mergeAll(
       routesLayer,
+      connectionKeeperLayer,
       httpListeningLayer,
       runtimeStateLayer,
       tailscaleServeLayer,
