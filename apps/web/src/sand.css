@@ -542,6 +542,16 @@
   --sand-pill-fg: var(--sand-yellow);
 }
 
+/* Toasts and the TODAY panel both live top-right. When the panel is mounted,
+   shift the toast viewport left of it so transient notifications never cover
+   the command center (seen live: Codex update toast burying the critical
+   path). :has keeps this zero-JS and scoped. */
+body:has(.today-panel:not([data-collapsed])) [data-slot="toast-viewport"] {
+  right: calc(16px + 384px + 12px);
+  left: auto;
+  margin-right: 0;
+}
+
 /* Keep entrance animations inside the panel's rounded clip. Without paint
    containment the transformed rows composite outside the border radius. */
 .today-panel {

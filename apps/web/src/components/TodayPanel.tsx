@@ -189,7 +189,11 @@ export function TodayPanel() {
   });
 
   return (
-    <div className="today-panel sand-rise" data-testid="today-panel">
+    <div
+      className="today-panel sand-rise"
+      data-testid="today-panel"
+      {...(collapsed ? { "data-collapsed": "" } : {})}
+    >
       <button
         type="button"
         className="today-panel__head"
