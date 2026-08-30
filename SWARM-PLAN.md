@@ -61,16 +61,24 @@ Rules of engagement:
 
 ## 2. Verification stack (every node passes ALL that apply)
 
-| Gate                | Command / method                                        | Standard                                                            |
-| ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| Types               | `pnpm typecheck`                                        | 0 errors, always                                                    |
-| Tests               | `pnpm --filter web test` (+server)                      | 2,892 → only grows                                                  |
-| Routing E2E         | `node scripts/team-e2e.mjs`                             | 0 unrouted, blocking/dated counts asserted                          |
-| Visual              | `node scripts/ui-screenshot.mjs` → eyeball the PNG      | every UI change, before/after, no exceptions (learned the hard way) |
-| Surfaces            | AGENTS.md "hit every surface" list, walked explicitly   | reviewer confirms which entries applied                             |
-| Cross-vendor review | REVIEWER (GPT) on Claude-authored diffs                 | blocking; findings fixed or explicitly waived with reason           |
-| Remote smoke        | deploy to Hetzner, screenshot over Tailscale            | any change touching C4/server/env paths                             |
-| Perf                | payload size over websocket eyeballed on touched routes | no regressions (house rule #2)                                      |
+| Gate                | Command / method                                                | Standard                                                                                                                  |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Types               | `pnpm typecheck`                                                | 0 errors, always                                                                                                          |
+| Tests               | `pnpm --filter web test` (+server)                              | 2,892 → only grows                                                                                                        |
+| Routing E2E         | `node scripts/team-e2e.mjs`                                     | 0 unrouted, blocking/dated counts asserted                                                                                |
+| Visual              | `node scripts/ui-screenshot.mjs` → eyeball the PNG              | every UI change, before/after, no exceptions (learned the hard way)                                                       |
+| Surfaces            | AGENTS.md "hit every surface" list, walked explicitly           | reviewer confirms which entries applied                                                                                   |
+| Cross-vendor review | REVIEWER (GPT) on Claude-authored diffs                         | blocking; findings fixed or explicitly waived with reason                                                                 |
+| Remote smoke        | deploy to Hetzner, screenshot over Tailscale                    | any change touching C4/server/env paths                                                                                   |
+| Perf                | payload size over websocket eyeballed on touched routes         | no regressions (house rule #2)                                                                                            |
+| Anti-slop           | `/deslop` pass on code diffs, `/unslop` on prose, before review | reviewer sees clean diffs; mediocre output gets one fresh "scrap it, implement the elegant solution" take, not line-edits |
+
+Worker hygiene (from claude-code-best-practice, 65k stars, read 2026-08-30):
+
+- Workers report back before ~40% context; degradation past that is measured, not folklore.
+- Slice vertically (tracer bullets: DB+server+UI in one node), never horizontal phases.
+- Every skill we author gets a Gotchas section that grows with observed failure points.
+- Cross-model QA validated: our Polly rule matches their cross-model workflow (Claude plans/builds, other-vendor reviews).
 
 ## 3. Skills routing (which skill, which role, when)
 
