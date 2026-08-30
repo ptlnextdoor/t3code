@@ -129,11 +129,19 @@ Updated today to route hard implementation to opus-4-8 (§5).
 - N2.1 `voice-onboarding` — record → transcribe → existing escalation parser →
   draft roster → editable → first NOW.md. The crux node; opus-4-8, high effort,
   its own E2E fixture (three real rambling transcripts, parsed counts asserted).
-- N2.2 `capturer-vendor` — vendor Dayflow-type capture as tracked upstream
-  (patch queue, ARCHITECTURE.md §6 level 2). Mac-first, honest about Win/Linux.
+- N2.2 `capturer-vendor` — vendor Dayflow-type capture as tracked upstream.
+  NOTE: this is for strangers. Aayu's OWN 6-month Dayflow history keeps flowing
+  via the nightly knowledge refresh — distinct path, do not "clean it up".
+  Vendor with a patch queue (ARCHITECTURE.md §6 level 2). Mac-first, honest about Win/Linux.
 - N2.3 `calendar-connector` — Gmail connector is the template (proactive refresh,
   never says "token").
 - N2.4 `g5-proactive` — employees poll their connectors on schedules.
+- N2.5 `g6-chat-config` — tweak roster names/roles by talking to it. REQUIRED by
+  the 30-min flow (PRODUCT.md minute 0:10); was in the gap ledger but unscheduled
+  until the 2026-08-30 audit. Ships with Phase 2 or the promise is false.
+- N2.6 `usage-meter` — per-employee cost metering (recovered from SUPERAPP-PLAN
+  slice 3, dropped in translation; audit 2026-08-30). Also the enforcement
+  substrate for §5 spend caps. Approval-queue half already lives on as policies.
 - GATE: a non-Aayu human (or a fresh VM) walks the 30-min flow; timed; recorded.
 
 **Phase 3 — Substrate + distribution (~2 weeks, shaped by N0.2 verdict)**
@@ -148,6 +156,9 @@ Updated today to route hard implementation to opus-4-8 (§5).
 
 **Phase 4 — Ship (~1 week)**
 
+- N4.0 `g4-employee-memory` — employees remember their own work; the 1,518
+  imported chats become employee memory, not rail clutter (SUPERAPP-PLAN's
+  original promise; had no node until the 2026-08-30 audit).
 - N4.1 trust/docs (why it reads email+screen; local-first visible).
 - N4.2 CHANGELOG.md + release cut + install script.
 - N4.3 tribe beta: 3 users whose lives look like Aayu's; instrument the 30-min
