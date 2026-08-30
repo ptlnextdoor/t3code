@@ -268,6 +268,12 @@ session code (so: don't delete it for a month).
 - G9: Hetzner API token revocation — security, do first.
 - G10: Prime-agent "hard mode" RL loop — parked, claims unverified
   (SUPERAPP-PLAN.md §Future).
+- G11: Workspace shuttle — remote work on LOCAL files (non-git). Ship only the
+  named files to the box, work there, return a change-manifest (adds/edits/
+  deletes) applied locally after ONE batched approval; deletes always gate.
+  Router picks per task: git→box, local-file→shuttle, browser-session/Mac-app→
+  runs on the Mac. Generalizes G2 beyond NOW.md. (Aayu, 2026-08-30.)
+  (SUPERAPP-PLAN.md §Future).
 
 ## 12. Sequencing (respects the freeze rule)
 

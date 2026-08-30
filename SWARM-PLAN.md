@@ -139,6 +139,9 @@ Updated today to route hard implementation to opus-4-8 (§5).
 - N2.5 `g6-chat-config` — tweak roster names/roles by talking to it. REQUIRED by
   the 30-min flow (PRODUCT.md minute 0:10); was in the gap ledger but unscheduled
   until the 2026-08-30 audit. Ships with Phase 2 or the promise is false.
+- N2.7 `workspace-shuttle` — remote employees work on LOCAL laptop files
+  (G11): ship named files only, change-manifest return, one batched approval,
+  deletes always gate. Router: git→box, local→shuttle, Mac-only→Mac.
 - N2.6 `usage-meter` — per-employee cost metering (recovered from SUPERAPP-PLAN
   slice 3, dropped in translation; audit 2026-08-30). Also the enforcement
   substrate for §5 spend caps. Approval-queue half already lives on as policies.
