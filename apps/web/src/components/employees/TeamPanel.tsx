@@ -89,9 +89,11 @@ function EmployeeRow({
 export function TeamPanel({
   onOpenEmployee,
 }: {
-  onOpenEmployee?: (summary: EmployeeSummary) => void;
+  /** Returns a reason string when it could not open, or null on success. */
+  onOpenEmployee?: (summary: EmployeeSummary) => void | Promise<string | null>;
 } = {}) {
   const [markdown, setMarkdown] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,12 +127,18 @@ export function TeamPanel({
         {needing > 0 ? <span className="sand-pill today-pill-now">{needing} need you</span> : null}
         <span className="team-panel__meta">{summaries.length} working</span>
       </div>
+      {notice ? <div className="team-panel__notice">{notice}</div> : null}
       <div className="team-panel__body sand-stagger">
         {summaries.map((summary) => (
           <EmployeeRow
             key={summary.employee.id}
             summary={summary}
-            onOpen={(next) => onOpenEmployee?.(next)}
+            onOpen={(next) => {
+              const result = onOpenEmployee?.(next);
+              if (result instanceof Promise) {
+                void result.then((reason) => setNotice(reason ?? null));
+              }
+            }}
           />
         ))}
       </div>

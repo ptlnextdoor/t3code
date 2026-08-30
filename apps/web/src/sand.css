@@ -786,3 +786,12 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
 .today-panel__foot--notice {
   color: var(--sand-text-secondary);
 }
+
+.team-panel__notice {
+  padding: 8px 15px;
+  border-bottom: 1px solid var(--sand-stroke-tertiary);
+  background: color-mix(in srgb, var(--sand-yellow) 10%, transparent);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-xs);
+}

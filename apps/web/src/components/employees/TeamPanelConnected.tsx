@@ -25,16 +25,19 @@ export function TeamPanelConnected() {
    * worker is never given an instruction its manager did not read.
    */
   const openConversation = useCallback(
-    async (summary: EmployeeSummary) => {
-      if (!defaultProjectRef) return;
+    async (summary: EmployeeSummary): Promise<string | null> => {
+      // No project means there is nowhere to open a thread. Say so rather than
+      // dying on the click, which read as "the buttons don't work".
+      if (!defaultProjectRef) return "Add a project first, then employees can open a chat.";
       const opened = await handleNewThread(defaultProjectRef);
-      if (!opened?.draftId) return;
+      if (!opened?.draftId) return "Could not open a conversation.";
       setPrompt(opened.draftId, buildBriefing(summary));
+      return null;
     },
     [defaultProjectRef, handleNewThread, setPrompt],
   );
 
-  return <TeamPanel onOpenEmployee={(summary) => void openConversation(summary)} />;
+  return <TeamPanel onOpenEmployee={openConversation} />;
 }
 
 /**
@@ -46,14 +49,15 @@ export function TodayPanelConnected() {
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
 
   const openItem = useCallback(
-    async (briefing: string) => {
-      if (!defaultProjectRef) return;
+    async (briefing: string): Promise<string | null> => {
+      if (!defaultProjectRef) return "Add a project first, then the queue can open a chat.";
       const opened = await handleNewThread(defaultProjectRef);
-      if (!opened?.draftId) return;
+      if (!opened?.draftId) return "Could not open a conversation.";
       setPrompt(opened.draftId, briefing);
+      return null;
     },
     [defaultProjectRef, handleNewThread, setPrompt],
   );
 
-  return <TodayPanel onOpenItem={(briefing) => void openItem(briefing)} />;
+  return <TodayPanel onOpenItem={openItem} />;
 }
