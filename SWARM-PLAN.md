@@ -53,7 +53,12 @@ Rules of engagement:
 
 - **One node = one worktree.** No two builders share files (separate-before-serializing).
 - Builders never push to main; the coordinator lands work after REVIEWER + VERIFIER both pass.
-- Every node completes with an artifact: findings, evidence, validation run, open questions.
+- Every node completes with the Fable-loop handoff (thomaslentine.com/fable-guide, read 2026-08-30):
+  What I built / How I verified (observed behavior — "should work" is banned) /
+  Spec conformance: Met-Partial-Deviations / Flags for the judge / Confidence + why.
+  Written for a skeptic, not to reassure.
+- Workers batch ALL questions into one upfront round, then move. No trickle.
+- The coordinator never implements. Merges yes, code no. Caught editing = stop, respawn a builder.
 - Context discipline (headroom): scouts return summaries, never raw payloads,
   to the coordinator. Bulk output gets compressed; the graph, not chat, carries state.
 - Opus 4.8 is the builder brain because implementation quality is the bottleneck;
