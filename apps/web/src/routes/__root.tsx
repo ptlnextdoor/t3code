@@ -18,6 +18,7 @@ import {
   TodayPanelConnected,
 } from "../components/employees/TeamPanelConnected";
 import { ConnectionBar } from "../components/connections/ConnectionBar";
+import { ConnectionCards } from "../components/connections/ConnectionCards";
 import { CommandPalette } from "../components/CommandPalette";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
 import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
@@ -130,6 +131,7 @@ function RootRouteView() {
       <AppSidebarLayout>
         <div className="sand-rail">
           <ConnectionBar />
+          <ConnectionCards />
           <TeamPanelConnected />
           <TodayPanelConnected />
         </div>

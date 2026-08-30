@@ -4,10 +4,13 @@ import { assert, describe, it } from "@effect/vitest";
 import { buildTodayPayload } from "./TodayRoute.ts";
 
 describe("TodayRoute", () => {
-  it("builds a payload without throwing even when sources are missing", () => {
-    const payload = buildTodayPayload();
+  it("builds a payload without throwing even when sources are missing", async () => {
+    const payload = await buildTodayPayload();
     assert.isString(payload.generatedAt);
     assert.isArray(payload.cards);
+    // Calendar is empty when not connected, never absent, so the client can
+    // render nothing rather than guard for undefined.
+    assert.isArray(payload.calendar);
     // rosterJson is null on an instance with no override file (the default),
     // or the raw JSON string a stranger dropped on disk.
     assert.isTrue(payload.rosterJson === null || typeof payload.rosterJson === "string");

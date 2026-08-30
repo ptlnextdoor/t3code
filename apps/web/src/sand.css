@@ -772,6 +772,122 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
 }
 
+/* ---------------------------------------------------------------------- */
+/* Connection cards (the account-connect surface)                         */
+/* ---------------------------------------------------------------------- */
+
+.conn-card {
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog);
+  background: var(--sand-editor);
+  box-shadow: var(--sand-shadow-sm);
+  overflow: hidden;
+}
+
+.conn-card__head {
+  padding: 10px 13px;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--sand-stroke-tertiary);
+}
+
+.conn-card__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.conn-card__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+}
+
+/* Hairline between stacked rows, never above the first. */
+.conn-card__row + .conn-card__row {
+  border-top: 1px solid var(--sand-stroke-tertiary);
+}
+
+.conn-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--sand-radius-full);
+  background: var(--conn-dot, var(--sand-text-quaternary));
+  flex-shrink: 0;
+}
+
+.conn-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.conn-card__label {
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+}
+
+.conn-card__detail {
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conn-card__connected {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--sand-green);
+  font-size: var(--sand-font-xs);
+}
+
+.conn-card__action {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 11px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--sand-accent) 34%, transparent);
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-accent) 18%, transparent);
+  color: var(--sand-accent);
+  font-size: var(--sand-font-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.conn-card__action:hover {
+  background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
+}
+
+.conn-card__action:active {
+  transform: scale(0.98);
+}
+
+.conn-card__action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.conn-card__notice {
+  padding: 9px 13px;
+  border-top: 1px solid var(--sand-stroke-tertiary);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conn-card__action:active {
+    transform: none;
+  }
+}
+
 /* Disabled controls must read as unavailable, never as broken. */
 .today-act:disabled {
   opacity: 0.4;
