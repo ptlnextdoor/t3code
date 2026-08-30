@@ -795,3 +795,251 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   font-size: var(--sand-font-xs);
   line-height: var(--sand-line-xs);
 }
+
+/* ---------------------------------------------------------------------- */
+/* Onboarding — the voice-note front door (N2.1)                          */
+/* ---------------------------------------------------------------------- */
+
+.onboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--sand-radius-xl);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-quaternary);
+  box-shadow: var(--sand-shadow-sm);
+}
+
+.onboard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.onboard__title {
+  font-size: var(--sand-font-lg);
+  line-height: var(--sand-line-lg);
+  letter-spacing: var(--sand-tracking-lg);
+  color: var(--sand-text-primary);
+  font-weight: 600;
+}
+
+.onboard__meta {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-tertiary);
+}
+
+.onboard__lede {
+  margin: 0;
+  font-size: var(--sand-font-sm);
+  line-height: var(--sand-line-base);
+  color: var(--sand-text-secondary);
+}
+
+.onboard__textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 180px;
+  padding: 12px;
+  border-radius: var(--sand-radius-lg);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  line-height: var(--sand-line-base);
+  font-family: inherit;
+  transition: border-color var(--sand-duration-normal) var(--sand-ease-out-quint);
+}
+
+.onboard__textarea::placeholder {
+  color: var(--sand-text-quaternary);
+}
+
+.onboard__textarea:focus {
+  outline: none;
+  border-color: var(--sand-accent);
+}
+
+.onboard__cta {
+  align-self: flex-start;
+  padding: 9px 18px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid transparent;
+  background: var(--sand-accent);
+  color: #0b0b0b;
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--sand-duration-fast) var(--sand-ease-out-quint),
+    filter var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard__cta:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.onboard__cta:active:not(:disabled) {
+  transform: scale(var(--sand-press-scale));
+}
+
+.onboard__cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.onboard__cta--danger {
+  background: var(--sand-red);
+  color: #150406;
+}
+
+.onboard__error {
+  padding: 8px 12px;
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-red) 12%, transparent);
+  color: var(--sand-red);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-sm);
+}
+
+.onboard__warn {
+  padding: 6px 10px;
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-yellow) 12%, transparent);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+}
+
+.onboard__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--sand-radius-row);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+}
+
+.onboard-card--merging {
+  border-color: var(--sand-accent);
+  background: color-mix(in srgb, var(--sand-accent) 8%, transparent);
+}
+
+.onboard-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.onboard-card__name {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.onboard-card__name:hover {
+  border-color: var(--sand-stroke-secondary);
+}
+
+.onboard-card__name:focus {
+  outline: none;
+  border-color: var(--sand-accent);
+  background: var(--sand-fill-secondary);
+}
+
+.onboard-card__role {
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-sm);
+  color: var(--sand-text-tertiary);
+}
+
+.onboard-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.onboard-card__act {
+  padding: 4px 10px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-xs);
+  cursor: pointer;
+  transition: background var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard-card__act:hover:not(:disabled) {
+  background: var(--sand-fill-active);
+  color: var(--sand-text-primary);
+}
+
+.onboard-card__act:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.onboard-card__act--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sand-red) 18%, transparent);
+  color: var(--sand-red);
+}
+
+.onboard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.onboard__back {
+  padding: 8px 14px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+}
+
+.onboard__back:hover {
+  color: var(--sand-text-secondary);
+}
+
+.onboard__done {
+  padding: 14px;
+  text-align: center;
+  color: var(--sand-green);
+  font-size: var(--sand-font-base);
+}
+
+.onboard__reopen {
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  cursor: pointer;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard__reopen:hover {
+  color: var(--sand-text-secondary);
+}
