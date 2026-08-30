@@ -94,3 +94,22 @@ Remote exec: t3code server already runs standalone on :3773; moving it to
 a VPS is configuration, not architecture.
 
 Freeze rule still holds: none of this before the paper is submitted.
+
+## Future idea: Prime-agent-style RL loop over the jcode harness (noted 2026-08-30)
+
+Aayu's observation: "prime agent" reportedly makes Claude Opus 5-10x smarter,
+~90%+ on ARC-AGI vs 60-70% baseline, via a reinforcement-learning loop. jcode's
+edge is raw speed. Thesis: keep jcode as the fast harness (the hands) and add a
+prime-style deliberation/RL loop as an optional "hard mode" an employee can
+escalate to for genuinely hard tasks.
+
+Shape to explore (NOT built, just a placeholder):
+
+- Fast path: jcode as-is. Most employee work is speed-bound, not reasoning-bound.
+- Hard path: a bounded RL/search loop (verify -> critique -> retry) wrapped
+  around the same tools, triggered per-task, not always-on (it's expensive).
+- The employee decides which path a task needs; the human never sees the plumbing.
+- Verify claims first: the "5-10x / 90% ARC-AGI" numbers are marketing until
+  reproduced on our own tasks. Measure before adopting.
+
+Do not build before the core superapp (remote exec + acting employees) is solid.
