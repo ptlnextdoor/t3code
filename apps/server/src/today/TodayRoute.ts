@@ -27,9 +27,19 @@ const DAYFLOW_DB_PATH =
   NodePath.join(NodeOS.homedir(), "Library/Application Support/Dayflow/chunks.sqlite");
 const NOW_MD_PATH =
   process.env.T3CODE_NOW_MD ?? NodePath.join(NodeOS.homedir(), ".jcode/knowledge-org/NOW.md");
+/**
+ * Per-instance employee roster. Absent on the original instance, which falls
+ * back to the built-in default baked into the web bundle, so nothing changes
+ * here. A stranger drops a roster.json to staff their own team without a code
+ * change. Path is env-overridable to match T3CODE_NOW_MD's pattern.
+ */
+const ROSTER_JSON_PATH =
+  process.env.T3CODE_ROSTER_JSON ?? NodePath.join(NodeOS.homedir(), ".t3/superapp/roster.json");
 /** Cap payloads: t3code perf rule, no large payloads to the client. */
 const MAX_CARDS = 30;
 const MAX_NOW_BYTES = 64 * 1024;
+/** A roster.json larger than this is a mistake, not a team. Cap defensively. */
+const MAX_ROSTER_BYTES = 32 * 1024;
 
 export interface TodayTimelineCard {
   readonly day: string;
@@ -49,6 +59,12 @@ export interface TodayPayload {
    */
   readonly nowGeneratedAt: string | null;
   readonly nowMarkdown: string | null;
+  /**
+   * Raw roster.json read off disk, or null when the instance has no override.
+   * The client validates and falls back to the built-in default, so the wire
+   * stays a dumb passthrough and the original instance sends null.
+   */
+  readonly rosterJson: string | null;
   readonly cards: ReadonlyArray<TodayTimelineCard>;
   readonly dayflowAvailable: boolean;
 }
@@ -61,6 +77,22 @@ function readNow(): { markdown: string | null; generatedAt: string | null } {
     return { generatedAt: stat.mtime.toISOString(), markdown };
   } catch {
     return { generatedAt: null, markdown: null };
+  }
+}
+
+/**
+ * Read the raw roster.json off disk, or null when there is no override file.
+ * Only ever returns the raw text: validation lives on the client (parseRoster),
+ * so the server stays a dumb file bridge. Oversized files are dropped rather
+ * than truncated, since a half-JSON blob would just fail to parse anyway.
+ */
+function readRosterJson(): string | null {
+  try {
+    const stat = NodeFS.statSync(ROSTER_JSON_PATH);
+    if (stat.size > MAX_ROSTER_BYTES) return null;
+    return NodeFS.readFileSync(ROSTER_JSON_PATH, "utf8");
+  } catch {
+    return null;
   }
 }
 
@@ -93,6 +125,7 @@ export function buildTodayPayload(): TodayPayload {
     generatedAt: new Date().toISOString(),
     nowGeneratedAt: now.generatedAt,
     nowMarkdown: now.markdown,
+    rosterJson: readRosterJson(),
     cards,
     dayflowAvailable: available,
   };

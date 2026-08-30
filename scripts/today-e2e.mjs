@@ -37,7 +37,10 @@ const MIME = {
 
 /** Build the same payload shape the real server route returns. */
 async function todayPayload() {
-  const nowPath = join(homedir(), ".jcode/knowledge-org/NOW.md");
+  // Honor the same overrides the real server route reads (T3CODE_NOW_MD,
+  // T3CODE_DAYFLOW_DB), so this harness works on a stranger's box, not just
+  // the Mac these files defaulted to.
+  const nowPath = process.env.T3CODE_NOW_MD ?? join(homedir(), ".jcode/knowledge-org/NOW.md");
   const nowMarkdown = existsSync(nowPath) ? readFileSync(nowPath, "utf8") : null;
   // NOW.md's mtime is the briefing age (gap G1 staleness). T3CODE_NOW_MTIME
   // overrides it so the staleness notice can be screenshotted on demand.
@@ -51,7 +54,8 @@ async function todayPayload() {
   try {
     const { DatabaseSync } = await import("node:sqlite");
     const db = new DatabaseSync(
-      join(homedir(), "Library/Application Support/Dayflow/chunks.sqlite"),
+      process.env.T3CODE_DAYFLOW_DB ??
+        join(homedir(), "Library/Application Support/Dayflow/chunks.sqlite"),
       { readOnly: true },
     );
     cards = db

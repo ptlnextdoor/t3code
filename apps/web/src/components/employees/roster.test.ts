@@ -1,7 +1,14 @@
 // @effect-diagnostics globalDate:off
 import { assert, describe, it } from "@effect/vitest";
 
-import { ARCHIVED_TOPICS, ROSTER, employeeById, ownerOf } from "./roster";
+import {
+  ARCHIVED_TOPICS,
+  ROSTER,
+  employeeById,
+  ownerOf,
+  parseRoster,
+  resolveRoster,
+} from "./roster";
 
 describe("employee roster", () => {
   it("routes each real critical-path escalation to an owner", () => {
@@ -56,5 +63,57 @@ describe("employee roster", () => {
   it("resolves employees by id", () => {
     assert.strictEqual(employeeById("paper")?.name, "Paper");
     assert.isUndefined(employeeById("nobody" as never));
+  });
+});
+
+describe("roster config (de-Aayu-fication)", () => {
+  const sample = JSON.stringify([
+    {
+      id: "sales",
+      name: "Sales",
+      role: "Chases the pipeline and closes deals.",
+      keywords: ["lead", "deal"],
+      topics: ["pipeline"],
+    },
+  ]);
+
+  it("resolveRoster returns the built-in default when there is no config", () => {
+    assert.strictEqual(resolveRoster(null), ROSTER);
+    assert.strictEqual(resolveRoster(undefined), ROSTER);
+    assert.strictEqual(resolveRoster(""), ROSTER);
+  });
+
+  it("resolveRoster loads a stranger's roster and routes against it", () => {
+    const roster = resolveRoster(sample);
+    assert.strictEqual(roster.length, 1);
+    assert.strictEqual(roster[0]?.name, "Sales");
+    assert.strictEqual(ownerOf("new lead from the form", roster), "sales");
+    assert.strictEqual(employeeById("sales", roster)?.name, "Sales");
+  });
+
+  it("resolveRoster falls back to the default on malformed or empty config", () => {
+    assert.strictEqual(resolveRoster("not json"), ROSTER);
+    assert.strictEqual(resolveRoster("[]"), ROSTER);
+    assert.strictEqual(resolveRoster('[{"id":"x"}]'), ROSTER);
+  });
+
+  it("parseRoster rejects invalid shapes with a precise reason", () => {
+    assert.throws(() => parseRoster({}), /array/);
+    assert.throws(
+      () => parseRoster([{ id: "", name: "n", role: "r", keywords: [], topics: [] }]),
+      /id/,
+    );
+    assert.throws(
+      () => parseRoster([{ id: "a", name: "A", role: "R", keywords: [1], topics: [] }]),
+      /keywords/,
+    );
+    assert.throws(
+      () =>
+        parseRoster([
+          { id: "dup", name: "A", role: "R", keywords: [], topics: [] },
+          { id: "dup", name: "B", role: "R", keywords: [], topics: [] },
+        ]),
+      /duplicated/,
+    );
   });
 });

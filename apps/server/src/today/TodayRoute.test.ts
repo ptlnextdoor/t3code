@@ -8,6 +8,9 @@ describe("TodayRoute", () => {
     const payload = buildTodayPayload();
     assert.isString(payload.generatedAt);
     assert.isArray(payload.cards);
+    // rosterJson is null on an instance with no override file (the default),
+    // or the raw JSON string a stranger dropped on disk.
+    assert.isTrue(payload.rosterJson === null || typeof payload.rosterJson === "string");
     // Cards are capped to keep the payload small (t3code perf rule).
     assert.isAtMost(payload.cards.length, 30);
     // nowMarkdown is either null (missing file) or a bounded string.

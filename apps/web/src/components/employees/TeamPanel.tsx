@@ -20,11 +20,13 @@ import {
   parseNowSections,
   stalenessNotice,
 } from "../todayPanel.logic";
+import { resolveRoster } from "./roster";
 import { countNeedingYou, summarizeEmployees, type EmployeeSummary } from "./summarize";
 
 interface TodayPayload {
   readonly nowMarkdown: string | null;
   readonly nowGeneratedAt: string | null;
+  readonly rosterJson?: string | null;
 }
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -100,6 +102,7 @@ export function TeamPanel({
 } = {}) {
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [rosterJson, setRosterJson] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +115,7 @@ export function TeamPanel({
         if (!cancelled) {
           setMarkdown(data.nowMarkdown);
           setGeneratedAt(data.nowGeneratedAt);
+          setRosterJson(data.rosterJson ?? null);
         }
       } catch {
         // Local-only surface: silent when the bridge is absent.
@@ -127,7 +131,7 @@ export function TeamPanel({
 
   if (markdown === null) return null;
 
-  const summaries = summarizeEmployees(parseNowSections(markdown));
+  const summaries = summarizeEmployees(parseNowSections(markdown), resolveRoster(rosterJson));
   const needing = countNeedingYou(summaries);
   // One notice slot, one signal: a stale briefing outranks a transient
   // open-failure reason, since it invalidates every row below it.

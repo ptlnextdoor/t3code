@@ -35,12 +35,21 @@ const TOKEN_PATH = join(homedir(), ".config", "hetzner", "token");
 const SSH_DIR = join(homedir(), ".ssh");
 const SSH_CONFIG = join(SSH_DIR, "config");
 
-const SERVER_TYPE = "cx23"; // Intel 2 vCPU / 4 GB, ~€0.006/hr
-const IMAGE = "ubuntu-24.04";
-const LOCATION = "nbg1";
+// Box shape: env-overridable so a stranger can pick their own size, image, and
+// region without editing this file. Defaults reproduce the box we built by hand.
+const SERVER_TYPE = process.env.T3CODE_SERVER_TYPE ?? "cx23"; // Intel 2 vCPU / 4 GB, ~€0.006/hr
+const IMAGE = process.env.T3CODE_SERVER_IMAGE ?? "ubuntu-24.04";
+const LOCATION = process.env.T3CODE_SERVER_LOCATION ?? "nbg1";
 
-// Servers this script must never touch, no matter what --name is passed.
-const PROTECTED = new Set(["ubuntu-4gb-nbg1-1"]);
+// Servers this script must never touch, no matter what --name is passed. The
+// default guards our own long-lived box; a stranger sets their own via
+// T3CODE_PROTECTED_SERVERS (comma-separated) so this list is not Aayu-specific.
+const PROTECTED = new Set(
+  (process.env.T3CODE_PROTECTED_SERVERS ?? "ubuntu-4gb-nbg1-1")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
 
 const REMOTE_DIR = "/opt/t3code";
 const REMOTE_HOME = "/var/lib/t3code";
@@ -175,10 +184,7 @@ function upsertSshConfig(name, ip, privPath) {
 function removeConfigBlock(cfg, name) {
   const begin = CONFIG_BEGIN(name);
   const end = CONFIG_END(name);
-  const re = new RegExp(
-    `\\n*${escapeRe(begin)}[\\s\\S]*?${escapeRe(end)}\\n*`,
-    "g",
-  );
+  const re = new RegExp(`\\n*${escapeRe(begin)}[\\s\\S]*?${escapeRe(end)}\\n*`, "g");
   return cfg.replace(re, "\n");
 }
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -202,14 +208,7 @@ function cloudInit(pubText) {
 
 // ---------------------------------------------------------------- ssh runner
 function ssh(alias, cmd, { quiet = false } = {}) {
-  const args = [
-    "-o",
-    "ConnectTimeout=10",
-    "-o",
-    "BatchMode=yes",
-    alias,
-    cmd,
-  ];
+  const args = ["-o", "ConnectTimeout=10", "-o", "BatchMode=yes", alias, cmd];
   const r = spawnSync("ssh", args, { stdio: quiet ? "pipe" : "inherit", encoding: "utf8" });
   return { status: r.status ?? 1, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
 }
@@ -367,7 +366,9 @@ async function cmdCreate(name) {
 
   // 6) summary
   const nodeV = ssh(alias, "node -v", { quiet: true }).stdout.trim();
-  const tsStatus = ssh(alias, "tailscale ip -4 2>/dev/null | head -1", { quiet: true }).stdout.trim();
+  const tsStatus = ssh(alias, "tailscale ip -4 2>/dev/null | head -1", {
+    quiet: true,
+  }).stdout.trim();
   say("Summary");
   step(`ip:         ${ip}`);
   step(`ssh:        ssh ${alias}`);
