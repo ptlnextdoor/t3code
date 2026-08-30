@@ -2,8 +2,8 @@
 /**
  * Nightly Mac→box sync of derived knowledge artifacts.
  *
- * The Mac rebuilds NOW.md and FRONTS.md every night (com.aayu.jcode-knowledge-
- * refresh). The Hetzner box runs the t3code server, which reads T3CODE_NOW_MD
+ * The Mac rebuilds NOW.md and FRONTS.md every night (a local scheduled job).
+ * The remote box runs the t3code server, which reads T3CODE_NOW_MD
  * to serve the TODAY panel. This script pushes the two derived files down to
  * the box so the remote UI shows fresh data instead of a stale manual snapshot.
  *

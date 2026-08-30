@@ -36,6 +36,7 @@ export interface EmployeeSummary {
  */
 export function summarizeEmployees(
   sections: ReadonlyArray<TodaySection>,
+  roster: ReadonlyArray<Employee> = ROSTER,
 ): ReadonlyArray<EmployeeSummary> {
   const byKind = (kind: string) => sections.find((section) => section.kind === kind)?.items ?? [];
   const critical = byKind("critical");
@@ -43,9 +44,9 @@ export function summarizeEmployees(
   const decisions = byKind("decisions");
 
   const owned = (items: ReadonlyArray<TodayItem>, id: EmployeeId) =>
-    items.filter((item) => ownerOf(item.text) === id);
+    items.filter((item) => ownerOf(item.text, roster) === id);
 
-  return ROSTER.map((employee) => {
+  return roster.map((employee) => {
     const myCritical = owned(critical, employee.id);
     const myDrafts = owned(drafts, employee.id);
     const myDecisions = owned(decisions, employee.id);

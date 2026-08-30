@@ -28,7 +28,7 @@ import {
   type TodaySection,
 } from "./todayPanel.logic";
 import { buildItemBriefing } from "./employees/briefing";
-import { employeeById, ownerOf } from "./employees/roster";
+import { employeeById, ownerOf, resolveRoster } from "./employees/roster";
 
 interface TodayTimelineCard {
   readonly day: string;
@@ -42,6 +42,7 @@ interface TodayTimelineCard {
 interface TodayPayload {
   readonly generatedAt: string;
   readonly nowMarkdown: string | null;
+  readonly rosterJson?: string | null;
   readonly cards: ReadonlyArray<TodayTimelineCard>;
   readonly dayflowAvailable: boolean;
 }
@@ -252,8 +253,9 @@ export function TodayPanel({
       // Review / Reply / Draft / Decide open a conversation with the owning
       // employee, briefed on this one item. The old behavior was a dead-end
       // notice, which made every non-Send button useless.
-      const ownerId = ownerOf(item.text);
-      const employee = ownerId ? employeeById(ownerId) : undefined;
+      const roster = resolveRoster(payload?.rosterJson);
+      const ownerId = ownerOf(item.text, roster);
+      const employee = ownerId ? employeeById(ownerId, roster) : undefined;
       if (!employee || !onOpenItem) {
         setNotice(`No owner found for: ${item.text.slice(0, 48)}`);
         return;
