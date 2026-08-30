@@ -31,12 +31,11 @@ import type { OnboardingExtraction, OnboardingFront } from "@t3tools/shared/onbo
 export const MAX_TRANSCRIPT_CHARS = 12_000;
 
 export class ExtractionError extends Error {
-  constructor(
-    message: string,
-    readonly stage: "empty" | "spawn" | "parse" | "cli-missing",
-  ) {
+  readonly stage: "empty" | "spawn" | "parse" | "cli-missing";
+  constructor(message: string, stage: "empty" | "spawn" | "parse" | "cli-missing") {
     super(message);
     this.name = "ExtractionError";
+    this.stage = stage;
   }
 }
 

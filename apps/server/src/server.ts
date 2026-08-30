@@ -23,6 +23,7 @@ import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import { websocketRpcRouteLayer } from "./ws.ts";
 import { todayRouteLayer } from "./today/TodayRoute.ts";
+import { onboardBrainDumpRouteLayer, onboardCommitRouteLayer } from "./onboarding/OnboardRoute.ts";
 import {
   connectionDraftsRouteLayer,
   connectionSendRouteLayer,

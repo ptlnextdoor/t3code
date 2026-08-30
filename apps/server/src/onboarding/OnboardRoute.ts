@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off globalDate:off
+// @effect-diagnostics nodeBuiltinImport:off globalDate:off preferSchemaOverJson:off
 /**
  * Voice-note onboarding route: the crux of the 30-minute promise.
  *
@@ -103,25 +103,34 @@ export const onboardBrainDumpRouteLayer = HttpRouter.add(
       );
     }
 
-    const result = yield* Effect.tryPromise({
-      try: () => extractFronts(text),
-      catch: (error) =>
-        error instanceof ExtractionError ? error : new ExtractionError(String(error), "spawn"),
-    }).pipe(Effect.either);
-
-    if (result._tag === "Left") {
-      const { status, detail } = extractionFailure(result.left);
-      return HttpServerResponse.jsonUnsafe({ ok: false, detail }, { status });
-    }
-
-    const assembled = assembleOnboarding(result.right);
-    return HttpServerResponse.jsonUnsafe({
-      ok: true,
-      roster: assembled.roster,
-      nowMd: assembled.nowMd,
-      items: assembled.items,
-      existing: rosterExists(),
-    });
+    // The LLM one-shot and assembly are plain async. Run them inside a single
+    // Effect.promise (which never rejects into the error channel) and turn any
+    // ExtractionError into a typed HTTP response here, so the route stays a
+    // fail-closed value rather than a thrown effect.
+    const outcome = yield* Effect.promise(
+      async (): Promise<{ status: number; payload: unknown }> => {
+        try {
+          const assembled = assembleOnboarding(await extractFronts(text));
+          return {
+            status: 200,
+            payload: {
+              ok: true,
+              roster: assembled.roster,
+              nowMd: assembled.nowMd,
+              items: assembled.items,
+              existing: rosterExists(),
+            },
+          };
+        } catch (error) {
+          const failure =
+            error instanceof ExtractionError
+              ? extractionFailure(error)
+              : { status: 502, detail: "The model didn't respond. Try again in a moment." };
+          return { status: failure.status, payload: { ok: false, detail: failure.detail } };
+        }
+      },
+    );
+    return HttpServerResponse.jsonUnsafe(outcome.payload, { status: outcome.status });
   }),
 );
 
@@ -189,16 +198,18 @@ export const onboardCommitRouteLayer = HttpRouter.add(
     const replace = b.replace === true;
     const existing = rosterExists();
 
-    const write = yield* Effect.try({
-      try: () => {
+    // Writes are synchronous fs calls; wrap the whole decision in one Effect.sync
+    // that returns a discriminated outcome, so a disk failure becomes a 500 value
+    // rather than a thrown effect. No Effect error channel needed.
+    const outcome = yield* Effect.sync((): { ok: false } | { ok: true; staged: boolean } => {
+      try {
         if (existing && !replace) {
           // Never clobber a live instance implicitly: stage the new roster next
-          // to the old so the UI can diff, and hold the NOW.md write until the
-          // user confirms the replace (NOW.md is not a hardcoded life like the
-          // roster is, but staging both keeps the confirm atomic).
+          // to the old so the UI can diff, and stage the NOW.md alongside it so
+          // the confirm is atomic. Nothing live is touched until replace:true.
           writeAtomic(`${ROSTER_JSON_PATH}.new`, rosterText);
           writeAtomic(`${NOW_MD_PATH}.new`, nowMd);
-          return { staged: true as const };
+          return { ok: true, staged: true };
         }
         writeAtomic(ROSTER_JSON_PATH, rosterText);
         writeAtomic(NOW_MD_PATH, nowMd);
@@ -210,12 +221,13 @@ export const onboardCommitRouteLayer = HttpRouter.add(
             /* nothing staged */
           }
         }
-        return { staged: false as const };
-      },
-      catch: (error) => new Error(`could not write onboarding files: ${String(error)}`),
-    }).pipe(Effect.either);
+        return { ok: true, staged: false };
+      } catch {
+        return { ok: false };
+      }
+    });
 
-    if (write._tag === "Left") {
+    if (!outcome.ok) {
       return HttpServerResponse.jsonUnsafe(
         { ok: false, detail: "Couldn't save your team. Check the server's disk and permissions." },
         { status: 500 },
@@ -224,8 +236,8 @@ export const onboardCommitRouteLayer = HttpRouter.add(
 
     return HttpServerResponse.jsonUnsafe({
       ok: true,
-      staged: write.right.staged,
-      rosterPath: write.right.staged ? `${ROSTER_JSON_PATH}.new` : ROSTER_JSON_PATH,
+      staged: outcome.staged,
+      rosterPath: outcome.staged ? `${ROSTER_JSON_PATH}.new` : ROSTER_JSON_PATH,
       employees: roster.length,
     });
   }),
