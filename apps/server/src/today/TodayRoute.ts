@@ -42,20 +42,25 @@ export interface TodayTimelineCard {
 
 export interface TodayPayload {
   readonly generatedAt: string;
+  /**
+   * ISO mtime of NOW.md, the age of the underlying briefing (distinct from
+   * `generatedAt`, which is when this response was built). Null when the file
+   * is missing. L5 renders staleness > 24h as a visible notice (gap G1).
+   */
+  readonly nowGeneratedAt: string | null;
   readonly nowMarkdown: string | null;
   readonly cards: ReadonlyArray<TodayTimelineCard>;
   readonly dayflowAvailable: boolean;
 }
 
-function readNowMarkdown(): string | null {
+function readNow(): { markdown: string | null; generatedAt: string | null } {
   try {
     const stat = NodeFS.statSync(NOW_MD_PATH);
-    if (stat.size > MAX_NOW_BYTES) {
-      return NodeFS.readFileSync(NOW_MD_PATH, "utf8").slice(0, MAX_NOW_BYTES);
-    }
-    return NodeFS.readFileSync(NOW_MD_PATH, "utf8");
+    const raw = NodeFS.readFileSync(NOW_MD_PATH, "utf8");
+    const markdown = stat.size > MAX_NOW_BYTES ? raw.slice(0, MAX_NOW_BYTES) : raw;
+    return { generatedAt: stat.mtime.toISOString(), markdown };
   } catch {
-    return null;
+    return { generatedAt: null, markdown: null };
   }
 }
 
@@ -83,9 +88,11 @@ function readTodayCards(): { cards: Array<TodayTimelineCard>; available: boolean
 
 export function buildTodayPayload(): TodayPayload {
   const { cards, available } = readTodayCards();
+  const now = readNow();
   return {
     generatedAt: new Date().toISOString(),
-    nowMarkdown: readNowMarkdown(),
+    nowGeneratedAt: now.generatedAt,
+    nowMarkdown: now.markdown,
     cards,
     dayflowAvailable: available,
   };

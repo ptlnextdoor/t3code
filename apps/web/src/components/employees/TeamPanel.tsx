@@ -14,11 +14,17 @@
 import { useEffect, useState } from "react";
 
 import { resolvePrimaryEnvironmentHttpUrl } from "../../environments/primary/target";
-import { deadlineLabel, isUrgentDeadline, parseNowSections } from "../todayPanel.logic";
+import {
+  deadlineLabel,
+  isUrgentDeadline,
+  parseNowSections,
+  stalenessNotice,
+} from "../todayPanel.logic";
 import { countNeedingYou, summarizeEmployees, type EmployeeSummary } from "./summarize";
 
 interface TodayPayload {
   readonly nowMarkdown: string | null;
+  readonly nowGeneratedAt: string | null;
 }
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -93,6 +99,7 @@ export function TeamPanel({
   onOpenEmployee?: (summary: EmployeeSummary) => void | Promise<string | null>;
 } = {}) {
   const [markdown, setMarkdown] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,7 +109,10 @@ export function TeamPanel({
         const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/today"));
         if (!response.ok) return;
         const data = (await response.json()) as TodayPayload;
-        if (!cancelled) setMarkdown(data.nowMarkdown);
+        if (!cancelled) {
+          setMarkdown(data.nowMarkdown);
+          setGeneratedAt(data.nowGeneratedAt);
+        }
       } catch {
         // Local-only surface: silent when the bridge is absent.
       }
@@ -119,6 +129,9 @@ export function TeamPanel({
 
   const summaries = summarizeEmployees(parseNowSections(markdown));
   const needing = countNeedingYou(summaries);
+  // One notice slot, one signal: a stale briefing outranks a transient
+  // open-failure reason, since it invalidates every row below it.
+  const shownNotice = stalenessNotice(generatedAt, new Date()) ?? notice;
 
   return (
     <div className="team-panel sand-rise" data-testid="team-panel">
@@ -127,7 +140,7 @@ export function TeamPanel({
         {needing > 0 ? <span className="sand-pill today-pill-now">{needing} need you</span> : null}
         <span className="team-panel__meta">{summaries.length} working</span>
       </div>
-      {notice ? <div className="team-panel__notice">{notice}</div> : null}
+      {shownNotice ? <div className="team-panel__notice">{shownNotice}</div> : null}
       <div className="team-panel__body sand-stagger">
         {summaries.map((summary) => (
           <EmployeeRow

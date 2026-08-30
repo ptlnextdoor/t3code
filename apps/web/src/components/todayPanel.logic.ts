@@ -231,3 +231,22 @@ export function isUrgentDeadline(label: string): boolean {
   const days = /^(\d+)d$/.exec(label);
   return days !== null && Number(days[1]) <= 2;
 }
+
+/** A briefing older than this reads as stale, not current. */
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A human notice when NOW.md is older than 24h, else null. The morning read is
+ * only trustworthy if it is fresh; a silently stale briefing presents old data
+ * as current (gap G1). `generatedAt` is NOW.md's mtime; null (missing file)
+ * yields no notice.
+ */
+export function stalenessNotice(generatedAt: string | null, now: Date): string | null {
+  if (generatedAt === null) return null;
+  const then = Date.parse(generatedAt);
+  if (Number.isNaN(then)) return null;
+  const ageMs = now.getTime() - then;
+  if (ageMs < STALE_AFTER_MS) return null;
+  const days = Math.floor(ageMs / STALE_AFTER_MS);
+  return `Briefing is ${days} day${days === 1 ? "" : "s"} old`;
+}
