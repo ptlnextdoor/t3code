@@ -228,9 +228,11 @@ session code (so: don't delete it for a month).
 
 - **Transport:** Tailscale only. Firewall: SSH + tailnet. No public web port.
 - **Secrets:** Gmail tokens in `apps/server` connector store, Mac only. Env
-  vars on the box hold nothing personal. The pasted Hetzner API token in a
-  chat transcript is COMPROMISED until revoked (console.hetzner.cloud →
-  Security → API Tokens) — open item, do it.
+  vars on the box hold nothing personal. Hetzner API token lives at
+  `~/.config/hetzner/token` (600, Mac only) — owner decision 2026-08-30:
+  keep and use it (infra automation: resize/snapshot/rebuild/burst boxes);
+  Aayu accepted transcript exposure, G9 closed. Never copy it to the box
+  or any repo.
 - **Blast radius:** an employee compromise is bounded by its policy row (§5).
   The box can be rebuilt from scratch in <1h (proven 2026-08-29); it holds no
   irreplaceable state by design (§7).
@@ -265,7 +267,7 @@ session code (so: don't delete it for a month).
   it to hire/rename/re-scope it."
 - G7: Mobile — none. Cheapest path is inheriting omnigent's if spike passes.
 - G8: Notice-banner fix (TeamPanel silent no-op) is uncommitted.
-- G9: Hetzner API token revocation — security, do first.
+- G9: CLOSED 2026-08-30 — owner decision: token kept for infra automation, stored at ~/.config/hetzner/token (Mac, 600).
 - G10: Prime-agent "hard mode" RL loop — parked, claims unverified
   (SUPERAPP-PLAN.md §Future).
 - G11: Workspace shuttle — remote work on LOCAL files (non-git). Ship only the
