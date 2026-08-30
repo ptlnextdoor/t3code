@@ -55,6 +55,10 @@
       "types": "./src/semver.ts",
       "import": "./src/semver.ts"
     },
+    "./onboarding": {
+      "types": "./src/onboarding.ts",
+      "import": "./src/onboarding.ts"
+    },
     "./Net": {
       "types": "./src/Net.ts",
       "import": "./src/Net.ts"
