@@ -13,6 +13,10 @@ describe("TodayRoute", () => {
     // nowMarkdown is either null (missing file) or a bounded string.
     if (payload.nowMarkdown !== null) {
       assert.isAtMost(payload.nowMarkdown.length, 64 * 1024);
+      // A present file carries an ISO mtime; a missing one carries null.
+      assert.isString(payload.nowGeneratedAt);
+    } else {
+      assert.isNull(payload.nowGeneratedAt);
     }
     // Cards, when present, only contain today's rows.
     const localDay = new Date().toLocaleDateString("en-CA");

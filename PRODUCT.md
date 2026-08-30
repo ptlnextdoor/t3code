@@ -84,6 +84,27 @@ Aayu's**: students, researchers, builders drowning in fronts, chats, and
 deadlines. Named owner, real reason. "Anyone" is a year; "the tribe" is a
 quarter. Widen later, from a working core.
 
+## The canonical onboarding sequence (Aayu, verbatim, 2026-08-30)
+
+"Setup my account. Connect my AI providers and subs. Have it fire up a remote
+server. Load up my relevant files that it'd need access to on that server.
+Connect my Gmail, Google Calendar, GitHub, etc all there. Add my SSH keys and
+then have it set up to start working on my life."
+
+Seven steps, each already mapped to built or planned machinery:
+
+1. Account -> local-first identity, no cloud signup (Phase 3 auth node)
+2. AI providers -> subscription OAuth flows (Claude Max, SuperGrok), stored
+   like the Gmail connector: Connected/Reconnect, never tokens
+3. Remote server -> Hetzner API (token wired 2026-08-30): create box, harden,
+   Tailscale join, deploy server — automated, no console
+4. Relevant files -> the G11 workspace shuttle: ship named files/dirs only
+5. Connections -> one button each: Gmail (done), Calendar (N2.3), GitHub
+6. SSH keys -> generated per-box like t3code_remote was, pushed via API
+7. Start working -> voice-note seed (N2.1) + roster -> employees begin
+
+This sequence IS the product's first-run wizard. Build order follows it.
+
 ## The 30-minute flow (what the stranger actually does)
 
 ```

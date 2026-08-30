@@ -8,7 +8,7 @@
  * Usage: node scripts/today-e2e.mjs [outPng]
  */
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, extname } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -39,6 +39,14 @@ const MIME = {
 async function todayPayload() {
   const nowPath = join(homedir(), ".jcode/knowledge-org/NOW.md");
   const nowMarkdown = existsSync(nowPath) ? readFileSync(nowPath, "utf8") : null;
+  // NOW.md's mtime is the briefing age (gap G1 staleness). T3CODE_NOW_MTIME
+  // overrides it so the staleness notice can be screenshotted on demand.
+  let nowGeneratedAt = null;
+  if (process.env.T3CODE_NOW_MTIME) {
+    nowGeneratedAt = process.env.T3CODE_NOW_MTIME;
+  } else if (existsSync(nowPath)) {
+    nowGeneratedAt = statSync(nowPath).mtime.toISOString();
+  }
   let cards = [];
   try {
     const { DatabaseSync } = await import("node:sqlite");
@@ -60,6 +68,7 @@ async function todayPayload() {
     cards,
     dayflowAvailable: cards.length > 0,
     generatedAt: new Date().toISOString(),
+    nowGeneratedAt,
     nowMarkdown,
   };
 }

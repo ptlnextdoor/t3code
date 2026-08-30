@@ -1,7 +1,12 @@
 // @effect-diagnostics globalDate:off
 import { assert, describe, it } from "@effect/vitest";
 
-import { deadlineLabel, extractCriticalLines, parseNowSections } from "./todayPanel.logic";
+import {
+  deadlineLabel,
+  extractCriticalLines,
+  parseNowSections,
+  stalenessNotice,
+} from "./todayPanel.logic";
 
 const SAMPLE_NOW = `# NOW — what needs YOU
 
@@ -192,5 +197,27 @@ describe("deadlineLabel", () => {
   it("returns null when no date is present or it is far away", () => {
     assert.strictEqual(deadlineLabel("no date here", now), null);
     assert.strictEqual(deadlineLabel("Dec 25 thing", now), null);
+  });
+});
+
+describe("stalenessNotice", () => {
+  const now = new Date("2026-08-30T12:00:00Z");
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 60 * 60 * 1000).toISOString();
+
+  it("stays silent under 24h (23.9h)", () => {
+    assert.strictEqual(stalenessNotice(hoursAgo(23.9), now), null);
+  });
+
+  it("warns just over 24h (24.1h)", () => {
+    assert.strictEqual(stalenessNotice(hoursAgo(24.1), now), "Briefing is 1 day old");
+  });
+
+  it("pluralizes multi-day staleness", () => {
+    assert.strictEqual(stalenessNotice(hoursAgo(50), now), "Briefing is 2 days old");
+  });
+
+  it("returns null for a missing or unparseable timestamp", () => {
+    assert.strictEqual(stalenessNotice(null, now), null);
+    assert.strictEqual(stalenessNotice("not-a-date", now), null);
   });
 });
