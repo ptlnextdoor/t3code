@@ -13,20 +13,30 @@ Companion to ARCHITECTURE.md §8 (kill criteria) and §3 (the C4 contract).
 
 | Criterion | Result | One-line evidence |
 | --- | --- | --- |
-| **K1** latency >30% overhead | **UNTESTABLE** | No model credential exists on box or Mac; no session can complete a turn. |
+| **K1** latency >30% overhead | **FAIL** | Raw jcode median **2.35 s** vs omnigent→jcode median **13.51 s** = **+475 %** overhead, 3 runs each on the box under subscription auth. |
 | **K2** tool-surface / streaming loss | **PASS** (no loss by design) | ACP executor is the same protocol jcode already speaks; `pi`/`codex` harnesses show `streaming:true`, `interrupt:true`. |
 | **K3** internals patching required | **PASS** (none required) | jcode registered as `acp:jcode` via documented `~/.omnigent/config.yaml` `acp.agents`; omnigent's `inner.acp_executor` execed it. Zero source edits. |
-| **K4** RAM pressure forces box upgrade | **PASS** | Server idle baseline 189 MB RSS; omnigent + t3code (229 MB) coexist with ~2.9 GB free, **0 swap** throughout. |
+| **K4** RAM pressure forces box upgrade | **PASS** | omnigent server + one active jcode session + t3code coexist with ~1.8 GB available, **0 swap** throughout. |
 
-**Overall: NEEDS-CREDENTIAL-TO-DECIDE** — leaning MIGRATE-VIABLE.
+**Overall: DO-NOT-MIGRATE** — K1 fails the >30 % latency kill criterion by an order of magnitude.
+
+> **Update 2026-08-30 (K1 closed).** The credential gap was closed by installing
+> jcode on the box (linux-x86_64 v0.81.3, matching the Mac) and copying only its
+> subscription OAuth (`auth.json` + `auth-refresh-state.json`, 600 perms) via
+> scp. A trivial turn completes raw in ~2.35 s. Routed through omnigent as
+> `acp:jcode` the same turn takes ~13.5 s — a **+475 %** wall-clock penalty that
+> persists on both the `--server local` and warm `--server http://127.0.0.1:6767`
+> paths, so it is per-turn runner-spawn + ACP handshake cost, not one-time server
+> boot. That is ~16× the 30 % kill threshold. K2/K3/K4 remain PASS, but K1 alone
+> is a hard kill: **DO-NOT-MIGRATE.** Details in Task 4 below.
 
 The architecture question (K2/K3/K4 — "can jcode plug in via documented seams
-without a box upgrade?") is **answered yes on all three**. The only open gate is
-K1, a pure latency measurement blocked solely by the absence of any LLM API key
-on the box or Mac. K1 is not a design risk; it is a one-run measurement waiting
-for a credential. Give the spike any working model credential (Anthropic key,
-Databricks profile, or a jcode-native subscription path) and K1 resolves in
-minutes.
+without a box upgrade?") is **answered yes on all three**: jcode plugs in
+cleanly and the box holds the load. But the seam is slow. With K1 now measured
+under real subscription auth, the latency cost of routing every turn through
+omnigent's runner + ACP handshake is **+475 %** — an order of magnitude past the
+30 % kill line. A clean plug-in that quadruples-plus per-turn latency is not
+worth migrating to. The recommendation flips to **DO-NOT-MIGRATE.**
 
 ---
 
@@ -165,19 +175,86 @@ jcode already implements for its own ACP mode. There is no documented tool
 truncation in the ACP path. **K2 = PASS** (no surface loss by design); a live
 turn would confirm streaming end-to-end, but that needs K1's credential.
 
-## Task 4 — K1 latency
+## Task 4 — K1 latency (CLOSED 2026-08-30)
 
-**UNTESTABLE this run.** K1 requires a completed trivial turn through omnigent
-vs raw `jcode acp`, three runs each, medians compared. Both sides need a model
-credential to produce a turn, and none exists on the box or Mac (Task 2).
-Additionally, `jcode` is not installed on the Linux box, so "raw jcode acp on
-the box" would itself require installing jcode there. **This is a measurement
-gap, not an architectural failure.** Unblock: any working model credential →
-run the A/B on the box.
+**FAIL — omnigent adds ~+475 % wall-clock per turn.**
 
-## Task 5 — K4 RAM under load
+### Setup that unblocked it
 
-Measured with both servers alive plus session activity:
+The blocker was purely credential/binary provisioning, resolved without any API
+key by leaning on jcode's subscription auth:
+
+1. Installed jcode on the box via the official installer, pinned to the Mac's
+   version: `JCODE_VERSION=v0.81.3 curl -fsSL https://jcode.sh/install | bash`.
+   The box is `x86_64` Linux, so it pulled `jcode-linux-x86_64` (SHA-256
+   verified by the installer) — the Mac's arm64 Mach-O binary could not be
+   copied. `jcode v0.81.3` confirmed on both.
+2. Copied **only** the two auth files from the Mac's `~/.jcode/` to the box's
+   `~/.jcode/` over the `t3code` scp alias, `chmod 600`: `auth.json` (the
+   Anthropic subscription OAuth) and `auth-refresh-state.json` (what the
+   automatic refresher needs). No sessions, history, config, or device files
+   were copied; file contents were never logged. `jcode auth status` on the box
+   → `claude available OAuth · source: ~/.jcode/auth.json · refresh: automatic`.
+3. Verified a real turn: `jcode run -p claude "Reply with exactly: PONG"` →
+   `PONG` in ~2.4 s.
+
+### The A/B (3 runs each, wall-clock on the box)
+
+Same trivial prompt (`Reply with exactly: PONG`) both sides.
+
+| Path | Run 1 | Run 2 | Run 3 | **Median** |
+| --- | --- | --- | --- | --- |
+| **A** raw `jcode run -p claude` | 2.35 s | 2.35 s | 2.02 s | **2.35 s** |
+| **B** `omnigent run --harness acp:jcode … --server local` | 13.68 s | 13.36 s | 13.51 s | **13.51 s** |
+
+**Overhead = (13.51 − 2.35) / 2.35 = +475 %.** The 30 % kill threshold would cap
+B at ~3.06 s; B is ~4.4× over that cap and ~5.7× raw jcode.
+
+### Is it just cold server boot? No.
+
+B's per-run log shows `Starting the local server… Launching your agent…`, so I
+re-ran B against the **already-running** persistent server
+(`--server http://127.0.0.1:6767`) to remove any server-boot cost:
+
+| Path | Runs | Median |
+| --- | --- | --- |
+| **B2** warm server (`--server http://127.0.0.1:6767`) | 13.39 s, 11.41 s (plus one grep-missed run) | **~12.5 s** |
+
+Warm-server B2 is statistically the same as cold B. The penalty is **per-turn
+runner spawn + ACP `initialize` handshake + host-daemon round-trips**, not
+one-time server startup — so it cannot be amortized away by keeping the server
+hot. Every turn pays it. Note the harness path itself is the documented
+`acp:jcode` seam from K3 (zero source edits), so this is the cost of the
+*intended* integration, not a workaround.
+
+**K1 = FAIL.** This is the hard kill: even with every architectural criterion
+green, a ~5.7× per-turn latency tax on the interactive path is disqualifying.
+
+## Task 5 — K4 RAM under real load (RECHECK 2026-08-30)
+
+Rechecked with the full stack Aayu specified — **omnigent server + one active
+jcode session running through it + the t3code server** — all alive at once.
+`free -m` before and during the active turn:
+
+| State | Used | Free | Available | Swap | Note |
+| --- | --- | --- | --- | --- | --- |
+| omnigent server idle + t3code (no active session) | 1918 MB | 224 MB | **1900 MB** | 0 | t3code pid 9865 serving :3773 → 200 |
+| **DURING** active jcode turn through omnigent | 2034 MB | 207 MB | **1785 MB** | **0** | 36 omnigent+jcode procs mid-turn |
+| After turn completes | 1962 MB | 278 MB | 1857 MB | 0 | turn returned `PONG` |
+| After `omnigent server stop` | 1328 MB | 911 MB | 2490 MB | 0 | runners reaped, t3code still 200 |
+
+`available` never dropped below **1.78 GB** and **swap stayed 0 the entire
+time**. The active turn cost only ~115 MB of `used` over idle. t3code (pid 9865,
+`/opt/t3code/bin.mjs`) returned HTTP 200 before, during, and after, and was
+never restarted or signalled.
+
+**K4 = PASS.** The 3.8 GB box comfortably holds omnigent server + a live jcode
+session + t3code with >1.7 GB headroom and zero swap. The earlier note about
+runner accumulation held (proc count rose 22 → 36 during the turn); the caveat
+from the prior run stands: reap runners between sessions. `omnigent server stop`
+cleanly removed them and recovered ~1.2 GB, t3code untouched.
+
+<details><summary>Superseded first-run K4 table (idle-only, no active session through omnigent)</summary>
 
 | State | Free RAM | Swap used | Note |
 | --- | --- | --- | --- |
@@ -186,12 +263,9 @@ Measured with both servers alive plus session activity:
 | After repeated session launches | 2575 MB | **0** | omnigent grew to ~947 MB across **8** procs |
 | After `omnigent server stop` | 3135 MB | 0 | all omnigent procs gone, t3code 200 |
 
-The 947 MB spike was **leftover runner/CLI/host-daemon processes accumulated
-from my repeated failed test launches** (each runner ~90–170 MB), not steady
-state. Process breakdown at peak: 1× server (189 MB) + 1× host daemon (96 MB) +
-1× CLI (170 MB) + 5× orphaned runner procs (~90–105 MB each). Steady-state for
-one server + one live session is ~189 + ~100 (host daemon) + ~100 (one runner)
-≈ **390 MB**, well within budget alongside t3code's 229 MB with >2 GB to spare.
+The 947 MB spike was leftover runner/CLI/host-daemon processes accumulated
+from repeated failed test launches (each runner ~90–170 MB), not steady state.
+</details>
 
 **K4 = PASS.** Never swapped (swap is 0-sized, so any real pressure would OOM,
 and none occurred). The box holds omnigent server + a session + t3code
@@ -223,35 +297,44 @@ unchanged. The policy endpoints are a bonus — they let §5 employee policies b
 
 ## Kill-criteria verdict (ARCHITECTURE.md §8)
 
-- **K1 (>30% latency overhead?)** — **UNTESTABLE.** No credential on box/Mac to
-  complete a turn either side; jcode not installed on the box. Measurement gap,
-  not a design failure. Resolves with any model credential.
+- **K1 (>30% latency overhead?)** — **FAIL.** Raw jcode 2.35 s vs
+  omnigent→`acp:jcode` 13.51 s median (3 runs each, box, subscription auth) =
+  **+475 %**, ~16× the 30 % line. Warm persistent server is no better (~12.5 s);
+  the cost is per-turn runner spawn + ACP handshake, unamortizable.
 - **K2 (harness API can't carry jcode's tools/streaming?)** — **PASS.** ACP is
   the protocol jcode already speaks; capability records show streaming +
-  interrupt; no documented tool truncation. Live-turn confirmation pending K1.
+  interrupt; no documented tool truncation. (Moot now that K1 kills it.)
 - **K3 (needs patching omnigent internals?)** — **PASS.** jcode registered as
   `acp:jcode` via documented `~/.omnigent/config.yaml` `acp.agents`; omnigent's
-  `inner.acp_executor` execed and began the ACP handshake. Zero source edits.
-- **K4 (RAM forces a box upgrade to idle?)** — **PASS.** 189 MB idle,
-  ~390 MB steady with a session, coexists with t3code, 0 swap. Reap runners
-  between sessions.
+  `inner.acp_executor` execed and completed the ACP handshake and a real turn.
+  Zero source edits.
+- **K4 (RAM forces a box upgrade to idle?)** — **PASS.** Rechecked under real
+  load (omnigent server + one active jcode session + t3code): ≥1.78 GB available,
+  0 swap throughout, t3code HTTP 200 the whole time. Reap runners between
+  sessions.
 
 ## Overall recommendation
 
-**NEEDS-CREDENTIAL-TO-DECIDE**, strongly leaning **MIGRATE-VIABLE.**
+**DO-NOT-MIGRATE.**
 
 Three of four kill criteria — the *architectural* ones (K2 tools, K3 no-patch,
-K4 RAM) — are cleared with concrete evidence. The one open criterion (K1) is a
-latency stopwatch blocked only by a missing API key, not by any property of
-omnigent's design. Recommendation to the coordinator: **do not decide MIGRATE /
-DO-NOT-MIGRATE yet.** Provision one model credential to the box (Anthropic key,
-Databricks `oss` profile, or install jcode+its subscription auth on the box),
-then re-run Task 4's A/B in under 30 minutes to close K1. Everything else that
-gates Phase 3 is green.
+K4 RAM) — are green with concrete evidence: jcode plugs into omnigent through a
+documented seam with zero source edits, and the 3.8 GB box holds the full stack.
+But K1, the one criterion that had been blocked on a credential, now measures
+**+475 % per-turn latency** through omnigent versus raw jcode — ~16× the 30 %
+kill threshold, and it does not shrink with a warm server because the cost is
+per-turn runner spawn plus the ACP `initialize` handshake, paid on every turn.
+Per ARCHITECTURE.md §8, K1 is a hard kill on its own: the interactive path
+cannot take a ~5.7× latency tax regardless of how clean the integration is.
+Recommendation to the coordinator: **do not migrate to omnigent as L2.** Keep
+t3code's own server. The architectural learnings (ACP seam works, RAM fits) are
+banked if the per-turn overhead is ever reduced upstream, but on omnigent 0.11.0
+the latency disqualifies it.
 
 Reversibility note (§8): nothing here is destructive. omnigent lives entirely
-under `~/.local` + `~/.omnigent`; `omnigent uninstall --purge` removes it. The
-t3code service was never touched (HTTP 200 verified before, during, and after).
+under `~/.local` + `~/.omnigent`; `omnigent uninstall --purge` removes it. jcode
+on the box lives under `~/.jcode` + `~/.local/bin/jcode`. The t3code service was
+never touched (HTTP 200 verified before, during, and after).
 
 ---
 
