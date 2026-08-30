@@ -474,6 +474,8 @@ export const makeRoutesLayer = Layer.mergeAll(
     attachmentUploadRouteLayer,
     staticAndDevRouteLayer,
     todayRouteLayer,
+    onboardBrainDumpRouteLayer,
+    onboardCommitRouteLayer,
     connectionsRouteLayer,
     connectionDraftsRouteLayer,
     connectionSendRouteLayer,
