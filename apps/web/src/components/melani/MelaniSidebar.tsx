@@ -316,6 +316,14 @@ function RosterBody({
         <span className="melani-state__body">
           Finish setup to staff your team, then everyone shows up here.
         </span>
+        <button
+          type="button"
+          className="melani-newbtn melani-state__cta"
+          data-testid="melani-empty-setup"
+          onClick={() => window.dispatchEvent(new Event("t3code:open-setup"))}
+        >
+          Open setup
+        </button>
       </div>
     );
   }

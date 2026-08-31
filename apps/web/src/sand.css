@@ -1891,3 +1891,11 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   line-height: 1.5;
   max-width: 220px;
 }
+
+.melani-state__cta {
+  margin-top: 6px;
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0 14px;
+  justify-content: center;
+}

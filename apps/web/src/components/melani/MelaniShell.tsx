@@ -17,6 +17,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { getLocalStorageItem } from "../../hooks/useLocalStorage";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { SetupGate } from "../setup/SetupGate";
 import { MelaniSidebar } from "./MelaniSidebar";
 import { useRosterState } from "./useRosterState";
 
@@ -126,6 +127,9 @@ export function MelaniShell({ children }: { readonly children: ReactNode }) {
       <div className="melani-shell__stage" data-testid="melani-stage">
         {children}
       </div>
+      {/* Mounts the first-run wizard when the instance is unset up; renders
+          nothing once ready. The empty roster state points here. */}
+      <SetupGate />
     </div>
   );
 }

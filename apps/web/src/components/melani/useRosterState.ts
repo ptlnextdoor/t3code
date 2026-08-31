@@ -10,13 +10,35 @@ import { useEffect, useState } from "react";
 
 import { resolvePrimaryEnvironmentHttpUrl } from "../../environments/primary/target";
 import { parseNowSections } from "../todayPanel.logic";
-import { resolveRoster } from "../employees/roster";
+import { parseRoster, resolveRoster } from "../employees/roster";
 import { countNeedingYou, summarizeEmployees, type EmployeeSummary } from "../employees/summarize";
 
 interface TodayPayload {
   readonly nowMarkdown: string | null;
   readonly nowGeneratedAt: string | null;
   readonly rosterJson?: string | null;
+}
+
+/**
+ * Resolve the roster for the shell, distinguishing an INTENTIONALLY empty team
+ * from a missing/broken config.
+ *
+ * The shared `resolveRoster` deliberately falls back to the built-in default on
+ * an empty array, so the original instance always shows a team. But the shell
+ * needs a genuine empty state (the setup-wizard pointer, UI-SPEC §6 N3.1), so a
+ * stranger who writes a valid `[]` roster.json gets exactly that — an empty
+ * roster — while a missing or malformed file still degrades to the default.
+ */
+function resolveShellRoster(rosterJson: string | null | undefined) {
+  if (rosterJson) {
+    try {
+      // A valid parse (even to zero employees) is an explicit choice; honour it.
+      return parseRoster(JSON.parse(rosterJson));
+    } catch {
+      // Malformed: fall through to the shared default-or-empty handling.
+    }
+  }
+  return resolveRoster(rosterJson);
 }
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -58,7 +80,7 @@ export function useRosterState(): RosterState {
         if (cancelled) return;
         const summaries = summarizeEmployees(
           parseNowSections(data.nowMarkdown ?? ""),
-          resolveRoster(data.rosterJson ?? null),
+          resolveShellRoster(data.rosterJson ?? null),
         );
         loadedOnce = true;
         setState({
