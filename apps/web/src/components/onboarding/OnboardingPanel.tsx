@@ -26,7 +26,16 @@ import {
   toRosterPayload,
   type RosterDraftEntry,
 } from "./onboardingDraft";
-import type { RosterEntry } from "@t3tools/shared/onboarding";
+import {
+  addArea,
+  hasBuildableArea,
+  manualToExtraction,
+  removeArea,
+  starterAreas,
+  updateArea,
+  type ManualArea,
+} from "./manualFronts";
+import { assembleOnboarding, type RosterEntry } from "@t3tools/shared/onboarding";
 
 interface BrainDumpResponse {
   readonly ok: boolean;
@@ -44,7 +53,7 @@ interface CommitResponse {
   readonly employees?: number;
 }
 
-type Phase = "dump" | "loading" | "review" | "committing" | "done";
+type Phase = "dump" | "loading" | "manual" | "review" | "committing" | "done";
 
 /** Count how many parsed NOW.md items each roster id owns, for the card badge. */
 function itemCounts(nowMd: string, roster: ReadonlyArray<RosterEntry>): Map<string, number> {
@@ -79,6 +88,26 @@ export function OnboardingPanel({
   const [existing, setExisting] = useState(existingInstance);
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [staged, setStaged] = useState(false);
+  const [manualAreas, setManualAreas] = useState<ReadonlyArray<ManualArea>>(starterAreas);
+  /** True once the AI path reports no model on this machine, so we nudge manual. */
+  const [noModel, setNoModel] = useState(false);
+
+  /**
+   * Move a set of proposed employees into the review step. Shared by the AI
+   * path (roster + nowMd from the server) and the manual path (assembled in the
+   * browser from typed areas), so the review/commit UI has exactly one entry.
+   */
+  const enterReview = useCallback(
+    (nextRoster: ReadonlyArray<RosterEntry>, nextNowMd: string, total: number, exists: boolean) => {
+      const counts = itemCounts(nextNowMd, nextRoster);
+      setRoster(nextRoster.map((e) => ({ ...e, itemCount: counts.get(e.id) ?? 0 })));
+      setNowMd(nextNowMd);
+      setItemTotal(total);
+      setExisting(exists);
+      setPhase("review");
+    },
+    [],
+  );
 
   const organize = useCallback(async () => {
     if (text.trim().length === 0) {
@@ -95,21 +124,40 @@ export function OnboardingPanel({
       });
       const data = (await response.json()) as BrainDumpResponse;
       if (!response.ok || !data.ok || !data.roster || !data.nowMd) {
+        // 503 means no AI model is set up here. That is not a failure to apologize
+        // for — it is the manual path's cue. Send them straight to build by hand.
+        if (response.status === 503) {
+          setNoModel(true);
+          setError(null);
+          setPhase("manual");
+          return;
+        }
         setError(data.detail ?? "Couldn't organize that. Try again.");
         setPhase("dump");
         return;
       }
-      const counts = itemCounts(data.nowMd, data.roster);
-      setRoster(data.roster.map((e) => ({ ...e, itemCount: counts.get(e.id) ?? 0 })));
-      setNowMd(data.nowMd);
-      setItemTotal(data.items ?? 0);
       setExisting(data.existing ?? existingInstance);
-      setPhase("review");
+      enterReview(data.roster, data.nowMd, data.items ?? 0, data.existing ?? existingInstance);
     } catch {
       setError("Couldn't reach the server. Is it running?");
       setPhase("dump");
     }
-  }, [text, existingInstance]);
+  }, [text, existingInstance, enterReview]);
+
+  /**
+   * Build the team from typed areas, entirely in the browser via the shared
+   * assembler — no server round trip, so it works with zero AI and even offline.
+   * The result flows into the same review step as the AI path.
+   */
+  const buildManual = useCallback(() => {
+    if (!hasBuildableArea(manualAreas)) {
+      setError("Add at least one area with a name and one item.");
+      return;
+    }
+    setError(null);
+    const assembled = assembleOnboarding(manualToExtraction(manualAreas));
+    enterReview(assembled.roster, assembled.nowMd, assembled.items, existingInstance);
+  }, [manualAreas, existingInstance, enterReview]);
 
   const start = useCallback(
     async (replace: boolean) => {
@@ -195,6 +243,109 @@ export function OnboardingPanel({
           >
             {phase === "loading" ? "Organizing…" : "Organize my life"}
           </button>
+          <button
+            type="button"
+            className="onboard__link"
+            data-testid="onboarding-manual-open"
+            onClick={() => {
+              setError(null);
+              setPhase("manual");
+            }}
+          >
+            No AI set up? Build your team by hand
+          </button>
+        </>
+      ) : null}
+
+      {phase === "manual" ? (
+        <>
+          {noModel ? (
+            <div className="onboard__warn" data-testid="onboarding-nomodel">
+              No AI model is set up on this machine, so I can&apos;t sort a brain-dump for you.
+              Build your team by hand below — it works the same from here.
+            </div>
+          ) : null}
+          <p className="onboard__lede">
+            Name a few areas of your life. Give each one a line about what it needs, and list
+            what&apos;s on your plate — one thing per line.
+          </p>
+          <div className="onboard__cards" data-testid="onboarding-manual">
+            {manualAreas.map((area) => (
+              <div key={area.id} className="onboard-card">
+                <div className="onboard-card__row">
+                  <input
+                    className="onboard-card__name"
+                    value={area.name}
+                    placeholder="Area, e.g. Work / Family / Money"
+                    onChange={(e) =>
+                      setManualAreas(updateArea(manualAreas, area.id, { name: e.target.value }))
+                    }
+                    aria-label="Area name"
+                  />
+                  {manualAreas.length > 1 ? (
+                    <button
+                      type="button"
+                      className="onboard-card__act onboard-card__act--danger"
+                      onClick={() => setManualAreas(removeArea(manualAreas, area.id))}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <input
+                  className="onboard-card__name"
+                  value={area.role}
+                  placeholder="What this area needs from you (optional)"
+                  onChange={(e) =>
+                    setManualAreas(updateArea(manualAreas, area.id, { role: e.target.value }))
+                  }
+                  aria-label="Area role"
+                />
+                <textarea
+                  className="onboard__textarea"
+                  value={area.items}
+                  placeholder={
+                    "One item per line\ne.g. Send the offer to Anika before Fri\nBuy poster board for Leo's project"
+                  }
+                  rows={4}
+                  onChange={(e) =>
+                    setManualAreas(updateArea(manualAreas, area.id, { items: e.target.value }))
+                  }
+                  aria-label="Area items"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="onboard__link"
+            data-testid="onboarding-manual-add"
+            onClick={() => setManualAreas(addArea(manualAreas))}
+          >
+            + Add another area
+          </button>
+          {error ? <div className="onboard__error">{error}</div> : null}
+          <div className="onboard__footer">
+            <button
+              type="button"
+              className="onboard__back"
+              onClick={() => {
+                setError(null);
+                setPhase("dump");
+              }}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="onboard__cta"
+              data-testid="onboarding-manual-build"
+              onClick={() => buildManual()}
+              disabled={!hasBuildableArea(manualAreas)}
+            >
+              Build my team
+            </button>
+          </div>
         </>
       ) : null}
 

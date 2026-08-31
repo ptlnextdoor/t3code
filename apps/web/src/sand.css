@@ -1137,6 +1137,24 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   color: var(--sand-text-secondary);
 }
 
+/* A quiet secondary action under the primary CTA: the manual escape hatch. */
+.onboard__link {
+  margin-top: 10px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.onboard__link:hover {
+  color: var(--sand-text-secondary);
+}
+
 .onboard__done {
   padding: 14px;
   text-align: center;
