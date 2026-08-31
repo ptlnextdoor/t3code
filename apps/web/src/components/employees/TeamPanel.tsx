@@ -134,12 +134,15 @@ export function TeamPanel({
 
   const summaries = summarizeEmployees(parseNowSections(markdown), resolveRoster(rosterJson));
   const needing = countNeedingYou(summaries);
-  // Two independent signals, each with its own slot: a stale briefing is a
-  // standing condition about the data, while an open-failure is feedback on
-  // the click the user just made. Collapsing them (the old `stale ?? notice`)
-  // hid the click reason behind the staleness banner, so the button read as
-  // dead. The click outcome is the actionable one, so it renders first.
+  // Two independent signals with a strict priority: a click-failure is feedback
+  // on the action the user just took, so it wins the single notice slot; a
+  // stale briefing is a lower-priority standing condition about the data. Only
+  // one renders at a time — they never stack. A click-failure here is now rare
+  // (the panel self-provisions its workspace, so it is a genuine server error,
+  // not "no project yet"), which is exactly why it deserves the slot when it
+  // does happen.
   const staleNotice = stalenessNotice(generatedAt, new Date());
+  const noticeReason = outcome?.reason ?? staleNotice;
 
   return (
     <div className="team-panel sand-rise" data-testid="team-panel">
@@ -148,21 +151,11 @@ export function TeamPanel({
         {needing > 0 ? <span className="sand-pill today-pill-now">{needing} need you</span> : null}
         <span className="team-panel__meta">{summaries.length} working</span>
       </div>
-      {outcome ? (
+      {noticeReason ? (
         <div className="team-panel__notice" data-testid="team-panel-notice" role="status">
-          <span>{outcome.reason}</span>
-          {outcome.action ? (
-            <button
-              type="button"
-              className="team-panel__notice-action"
-              onClick={() => outcome.action?.run()}
-            >
-              {outcome.action.label}
-            </button>
-          ) : null}
+          <span>{noticeReason}</span>
         </div>
       ) : null}
-      {staleNotice ? <div className="team-panel__notice">{staleNotice}</div> : null}
       <div className="team-panel__body sand-stagger">
         {summaries.map((summary) => (
           <EmployeeRow
