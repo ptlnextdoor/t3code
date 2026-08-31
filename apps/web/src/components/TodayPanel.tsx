@@ -28,6 +28,7 @@ import {
   type TodaySection,
 } from "./todayPanel.logic";
 import { buildItemBriefing } from "./employees/briefing";
+import type { PanelOpenOutcome } from "./employees/panelOutcome";
 import { employeeById, ownerOf, resolveRoster } from "./employees/roster";
 
 interface TodayTimelineCard {
@@ -208,16 +209,20 @@ function SectionBlock({
 export function TodayPanel({
   onOpenItem,
 }: {
-  /** Open a new conversation pre-filled with this briefing. Injected because
+  /** Open a new conversation pre-filled with this briefing. Returns an outcome
+   *  describing why it could not open (or null on success). Injected because
    *  thread-opening needs router context the panel must not depend on. */
-  onOpenItem?: (briefing: string) => void;
+  onOpenItem?: (briefing: string) => void | Promise<PanelOpenOutcome>;
 } = {}) {
   const [payload, setPayload] = useState<TodayPayload | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState<Date>(() => new Date());
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  // A notice can be a bare string (send results, "no owner") or a full
+  // outcome carrying a recovery action (the no-project blocker). Normalised to
+  // an outcome so the render has one shape to deal with.
+  const [notice, setNotice] = useState<PanelOpenOutcome>(null);
   const { gmail } = useConnections();
 
   useEffect(() => {
@@ -257,16 +262,20 @@ export function TodayPanel({
       const ownerId = ownerOf(item.text, roster);
       const employee = ownerId ? employeeById(ownerId, roster) : undefined;
       if (!employee || !onOpenItem) {
-        setNotice(`No owner found for: ${item.text.slice(0, 48)}`);
+        setNotice({ reason: `No owner found for: ${item.text.slice(0, 48)}` });
         return;
       }
-      onOpenItem(buildItemBriefing(employee, item.text, item.action));
+      // The opener returns an outcome when it cannot open (e.g. no project
+      // yet). Surface it — with its recovery action — instead of dropping it,
+      // which was why the queue buttons silently no-oped on a fresh install.
+      const outcome = await onOpenItem(buildItemBriefing(employee, item.text, item.action));
+      setNotice(outcome ?? null);
       return;
     }
 
     const draft = await findDraftFor(item.text);
     if (!draft) {
-      setNotice("Could not find a matching Gmail draft for this item.");
+      setNotice({ reason: "Could not find a matching Gmail draft for this item." });
       return;
     }
     const confirmed = window.confirm(
@@ -282,9 +291,9 @@ export function TodayPanel({
         method: "POST",
       });
       const result = (await response.json()) as { ok: boolean; detail: string };
-      setNotice(result.ok ? `Sent to ${draft.to}.` : result.detail);
+      setNotice({ reason: result.ok ? `Sent to ${draft.to}.` : result.detail });
     } catch {
-      setNotice("Could not reach Gmail. Nothing was sent.");
+      setNotice({ reason: "Could not reach Gmail. Nothing was sent." });
     } finally {
       setBusy(null);
     }
@@ -340,6 +349,20 @@ export function TodayPanel({
 
       {collapsed ? null : (
         <>
+          {notice ? (
+            <div className="team-panel__notice" data-testid="today-panel-notice" role="status">
+              <span>{notice.reason}</span>
+              {notice.action ? (
+                <button
+                  type="button"
+                  className="team-panel__notice-action"
+                  onClick={() => notice.action?.run()}
+                >
+                  {notice.action.label}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <div className="today-panel__body sand-stagger">
             {ordered.length > 0 ? (
               ordered.map((section) => (

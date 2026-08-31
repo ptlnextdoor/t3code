@@ -904,12 +904,33 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
 }
 
 .team-panel__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 8px 15px;
   border-bottom: 1px solid var(--sand-stroke-tertiary);
   background: color-mix(in srgb, var(--sand-yellow) 10%, transparent);
   color: var(--sand-yellow);
   font-size: var(--sand-font-xs);
   line-height: var(--sand-line-xs);
+}
+
+.team-panel__notice-action {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--sand-yellow) 45%, transparent);
+  border-radius: var(--sand-radius-md);
+  background: color-mix(in srgb, var(--sand-yellow) 16%, transparent);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.team-panel__notice-action:hover {
+  background: color-mix(in srgb, var(--sand-yellow) 26%, transparent);
 }
 
 /* ---------------------------------------------------------------------- */

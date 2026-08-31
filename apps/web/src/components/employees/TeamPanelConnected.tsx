@@ -8,12 +8,22 @@
  */
 import { useCallback } from "react";
 
+import { openCommandPalette } from "../../commandPaletteBus";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
 import { TodayPanel } from "../TodayPanel";
 import { buildBriefing } from "./briefing";
+import type { PanelOpenOutcome } from "./panelOutcome";
 import type { EmployeeSummary } from "./summarize";
 import { TeamPanel } from "./TeamPanel";
+
+// The one real blocker on a fresh install is "no project yet". Rather than a
+// dead click or a bare notice, the outcome carries an action that opens the
+// add-project flow inline, so the user recovers without leaving the rail.
+const addProjectOutcome = (subject: string): PanelOpenOutcome => ({
+  reason: `Add a project first, then ${subject} can open a chat.`,
+  action: { label: "Add project", run: () => openCommandPalette({ open: "add-project" }) },
+});
 
 export function TeamPanelConnected() {
   const { handleNewThread, defaultProjectRef } = useHandleNewThread();
@@ -25,12 +35,13 @@ export function TeamPanelConnected() {
    * worker is never given an instruction its manager did not read.
    */
   const openConversation = useCallback(
-    async (summary: EmployeeSummary): Promise<string | null> => {
-      // No project means there is nowhere to open a thread. Say so rather than
-      // dying on the click, which read as "the buttons don't work".
-      if (!defaultProjectRef) return "Add a project first, then employees can open a chat.";
+    async (summary: EmployeeSummary): Promise<PanelOpenOutcome> => {
+      // No project means there is nowhere to open a thread. Say so and offer
+      // the fix, rather than dying on the click, which read as "the buttons
+      // don't work".
+      if (!defaultProjectRef) return addProjectOutcome("employees");
       const opened = await handleNewThread(defaultProjectRef);
-      if (!opened?.draftId) return "Could not open a conversation.";
+      if (!opened?.draftId) return { reason: "Could not open a conversation." };
       setPrompt(opened.draftId, buildBriefing(summary));
       return null;
     },
@@ -49,10 +60,10 @@ export function TodayPanelConnected() {
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
 
   const openItem = useCallback(
-    async (briefing: string): Promise<string | null> => {
-      if (!defaultProjectRef) return "Add a project first, then the queue can open a chat.";
+    async (briefing: string): Promise<PanelOpenOutcome> => {
+      if (!defaultProjectRef) return addProjectOutcome("the queue");
       const opened = await handleNewThread(defaultProjectRef);
-      if (!opened?.draftId) return "Could not open a conversation.";
+      if (!opened?.draftId) return { reason: "Could not open a conversation." };
       setPrompt(opened.draftId, briefing);
       return null;
     },
