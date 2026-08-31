@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off globalDate:off preferSchemaOverJson:off
+// @effect-diagnostics nodeBuiltinImport:off globalDate:off preferSchemaOverJson:off tryCatchInEffectGen:off
 /**
  * Setup wizard route: the small server surface behind the first-run wizard.
  *
