@@ -16,8 +16,8 @@
  *   - single create under concurrency: two clicks in the same tick share one
  *     in-flight create, so a double-click never spawns two projects.
  */
-import { scopeProjectRef, type ScopedProjectRef } from "@t3tools/client-runtime/environment";
-import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import type { EnvironmentId, ProjectId, ScopedProjectRef } from "@t3tools/contracts";
 
 /**
  * The neutral name a self-provisioned workspace carries. Chosen to read as a

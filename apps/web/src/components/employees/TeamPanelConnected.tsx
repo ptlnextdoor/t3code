@@ -14,7 +14,7 @@
  * infrastructure.
  */
 import { useAtomValue } from "@effect/atom-react";
-import { type ScopedProjectRef } from "@t3tools/client-runtime/environment";
+import type { ScopedProjectRef } from "@t3tools/contracts";
 import { useCallback, useMemo, useRef } from "react";
 
 import { useComposerDraftStore } from "../../composerDraftStore";
