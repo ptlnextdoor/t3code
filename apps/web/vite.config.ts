@@ -269,6 +269,9 @@ export default defineConfig(() => {
       ...(process.env.T3CODE_ONBOARD_HARNESS === "1"
         ? { rollupOptions: { input: "onboarding-harness.html" }, outDir: "dist-harness" }
         : {}),
+      ...(process.env.T3CODE_SETUP_HARNESS === "1"
+        ? { rollupOptions: { input: "setup-harness.html" }, outDir: "dist-harness" }
+        : {}),
     },
     test: {
       projects: [defineProject(unitTestProject)],
