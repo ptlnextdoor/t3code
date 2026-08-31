@@ -28,8 +28,7 @@ import * as Effect from "effect/Effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
 const PROFILE_JSON_PATH = () =>
-  process.env.T3CODE_PROFILE_JSON ??
-  NodePath.join(NodeOS.homedir(), ".t3/superapp/profile.json");
+  process.env.T3CODE_PROFILE_JSON ?? NodePath.join(NodeOS.homedir(), ".t3/superapp/profile.json");
 const ROSTER_JSON_PATH = () =>
   process.env.T3CODE_ROSTER_JSON ?? NodePath.join(NodeOS.homedir(), ".t3/superapp/roster.json");
 
@@ -89,6 +88,28 @@ export interface SetupState {
   readonly profilePresent: boolean;
   readonly rosterPresent: boolean;
   readonly name: string | null;
+  /** True when a remote box is already reachable (env flag or ssh alias). */
+  readonly remoteReady: boolean;
+}
+
+/**
+ * Detect whether a remote is already set up, so step 3 can show Connected
+ * instead of teaching the provisioning command. Two honest signals, both facts
+ * about THIS machine, never a guess: the explicit T3CODE_REMOTE_READY env, or a
+ * `Host t3code` alias in the user's ~/.ssh/config (how t3code_remote was wired).
+ * We only READ ssh config; we never shell out or connect.
+ */
+export function remoteReady(): boolean {
+  if (process.env.T3CODE_REMOTE_READY === "1" || process.env.T3CODE_REMOTE_READY === "true") {
+    return true;
+  }
+  try {
+    const sshConfig = NodeFS.readFileSync(NodePath.join(NodeOS.homedir(), ".ssh/config"), "utf8");
+    // A "Host t3code" / "Host t3code-box" line means the alias exists.
+    return /^\s*Host\s+.*\bt3code\b/im.test(sshConfig);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -104,6 +125,7 @@ export function computeSetupState(): SetupState {
     profilePresent,
     rosterPresent,
     name: readProfileName(),
+    remoteReady: remoteReady(),
   };
 }
 

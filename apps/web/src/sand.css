@@ -1159,3 +1159,244 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
 .onboard__reopen:hover {
   color: var(--sand-text-secondary);
 }
+
+/* ── Setup wizard (N2.8) ─────────────────────────────────────────────────
+ * The first-run ribbon. One step visible at a time, a progress rail on top,
+ * a rise-in per step. Sand tokens only; no continuously repainting animation
+ * (t3code perf rule) — the rise plays once via `both` and stops.
+ */
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  border-radius: var(--sand-radius-lg, 10px);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-quinary);
+}
+
+.setup__rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setup__rail-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setup__rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-fill-primary);
+  flex-shrink: 0;
+  transition: background var(--sand-duration-normal) var(--sand-ease-out-quint);
+}
+
+.setup__rail-item--active .setup__rail-dot {
+  background: var(--sand-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sand-accent) 22%, transparent);
+}
+
+.setup__rail-item--done .setup__rail-dot {
+  background: var(--sand-green);
+}
+
+.setup__rail-label {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup__rail-item--active .setup__rail-label {
+  color: var(--sand-text-secondary);
+}
+
+.setup__rail-item--done .setup__rail-label {
+  color: var(--sand-text-tertiary);
+}
+
+.setup__stage {
+  min-height: 0;
+}
+
+.setup-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setup-step__eyebrow {
+  font-size: var(--sand-font-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sand-text-quaternary);
+}
+
+.setup-step__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+  line-height: 1.25;
+}
+
+.setup-step__blurb {
+  margin: 0;
+  font-size: var(--sand-font-base);
+  line-height: 1.55;
+  color: var(--sand-text-tertiary);
+}
+
+.setup-step__label {
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-secondary);
+  margin-top: 4px;
+}
+
+.setup-step__input {
+  padding: 9px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  outline: none;
+  transition: border-color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-step__input:focus {
+  border-color: var(--sand-accent);
+}
+
+.setup-step__error {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-red);
+}
+
+.setup-step__cta,
+.setup__next {
+  align-self: flex-start;
+  padding: 8px 18px;
+  border-radius: var(--sand-radius-full);
+  border: none;
+  background: var(--sand-accent);
+  color: var(--sand-chrome);
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-step__cta:disabled,
+.setup__next:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.setup__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.setup__nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setup__back,
+.setup__later {
+  padding: 6px 14px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup__back:hover,
+.setup__later:hover {
+  color: var(--sand-text-secondary);
+}
+
+/* GitHub "coming soon" card control — honest, disabled-looking, not clickable. */
+.conn-card__soon {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.setup-remote__connected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--sand-font-base);
+  color: var(--sand-text-secondary);
+  padding: 10px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+}
+
+.setup-remote__lede {
+  margin: 0 0 8px;
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-tertiary);
+}
+
+.setup-remote__code-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.setup-remote__code {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-editor);
+  color: var(--sand-text-secondary);
+  font-family: var(--sand-font-mono, ui-monospace, monospace);
+  font-size: var(--sand-font-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.setup-remote__copy {
+  padding: 0 14px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-remote__copy:hover {
+  color: var(--sand-text-primary);
+}
+
+.setup-remote__note {
+  margin: 8px 0 0;
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  line-height: 1.5;
+}

@@ -53,6 +53,7 @@ import {
   SettingsSection,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
+import { OPEN_SETUP_EVENT } from "../setup/SetupGate";
 
 const FILL_VALUE = "fill";
 const RESPONSIVE_VALUE = "responsive";
@@ -453,6 +454,24 @@ function DesktopOnlyBrowserDefaults({ children }: { readonly children: ReactNode
   );
 }
 
+function RunSetupAgainSetting() {
+  return (
+    <SettingsRow
+      {...searchableSetting("run-setup-again")}
+      description="Walk through the first-run wizard again — welcome, connections, remote, and rebuilding your team from a fresh brain-dump. Nothing is auto-shown; your current team stays until you explicitly replace it."
+      control={
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => window.dispatchEvent(new CustomEvent(OPEN_SETUP_EVENT))}
+        >
+          Run setup again
+        </Button>
+      }
+    />
+  );
+}
+
 export function IntegrationsSettingsPanel() {
   // Client-local preview defaults are editable only where the preview exists.
   const previewDefaultsDisabled = !isElectron;
@@ -467,6 +486,9 @@ export function IntegrationsSettingsPanel() {
 
   return (
     <SettingsPageContainer>
+      <SettingsSection id="setup" title="Setup">
+        <RunSetupAgainSetting />
+      </SettingsSection>
       <SettingsSection id="browser" title="Browser">
         {/* Server-authoritative, so it stays editable on every client and sits
             outside the block covering the desktop-only defaults. */}
