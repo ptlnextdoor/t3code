@@ -270,6 +270,17 @@ session code (so: don't delete it for a month).
 - G9: CLOSED 2026-08-30 — owner decision: token kept for infra automation, stored at ~/.config/hetzner/token (Mac, 600).
 - G10: Prime-agent "hard mode" RL loop — parked, claims unverified
   (SUPERAPP-PLAN.md §Future).
+- G12: Connectivity self-healing (BUG, owner-filed 2026-08-31): when the box
+  is unreachable the app must fix it ITSELF, never emit terminal commands at
+  the user. Layers, tried in order by the server: (1) Tailscale up via the
+  daemon's local API (tailscaled runs as root; the GUI-less `tailscale up`
+  sudo requirement is bypassable by talking to /var/run/tailscaled.socket —
+  investigate; else ship a one-time privileged helper installed during setup,
+  like every VPN app does), (2) Hetzner API firewall self-update when the
+  public IP rotates (PROVEN tonight: set_rules call fixed it in one shot),
+  (3) status surfaced as a Connections-card state (Reconnecting...), never
+  as instructions. The wizard's remote step must install whatever privileged
+  helper this needs UP FRONT so runtime healing never asks again.
 - G11: Workspace shuttle — remote work on LOCAL files (non-git). Ship only the
   named files to the box, work there, return a change-manifest (adds/edits/
   deletes) applied locally after ONE batched approval; deletes always gate.
