@@ -98,6 +98,15 @@ describe("brand surfaces carry no hardcoded host name", () => {
       expect(source).not.toMatch(/T3\s*Code/i);
     });
   }
+
+  it("index.html boot shell shows the Melani title, not the old brand", () => {
+    // Static shell is served before React mounts, so its <title> is the one
+    // hardcoded product name. It must read Melani, never the host brand.
+    const html = NodeFS.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
+    expect(title).toContain("Melani");
+    expect(title).not.toMatch(/T3\s*Code/i);
+  });
 });
 
 describe("branding logic", () => {

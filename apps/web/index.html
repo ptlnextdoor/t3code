@@ -453,13 +453,44 @@
         object-fit: contain;
       }
     </style>
-    <title>T3 Code (Alpha)</title>
+    <!--
+      Static shell title. index.html is served before React mounts, so it
+      cannot import the brand module (apps/web/src/branding.ts); this string is
+      the one place the product name is hardcoded. Keep it in sync with
+      APP_PRODUCT_NAME. Dev builds relabel to "Melani (Dev)" once React mounts.
+    -->
+    <title>Melani (Alpha)</title>
   </head>
   <body>
     <div id="root">
       <div id="boot-shell">
         <div id="boot-shell-card" aria-label="Melani splash screen">
-          <img id="boot-shell-logo" src="/apple-touch-icon.png" alt="Melani" />
+          <!--
+            Brand-neutral boot mark: a sand-style dark rounded square with an
+            "M". Inline SVG so no new binary asset ships and no T3 logo flashes
+            before React mounts. favicon.ico / apple-touch-icon.png are still
+            the T3 blueprint icons — FLAGGED FOR DESIGNER, not replaced here.
+          -->
+          <svg
+            id="boot-shell-logo"
+            width="64"
+            height="64"
+            viewBox="0 0 64 64"
+            fill="none"
+            role="img"
+            aria-label="Melani"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="1" y="1" width="62" height="62" rx="14" fill="#181818" stroke="#393939" />
+            <rect x="1.5" y="1.5" width="61" height="30" rx="13.5" fill="rgba(255,255,255,0.04)" />
+            <path
+              d="M17 45V22.5C17 21.12 18.12 20 19.5 20C20.62 20 21.63 20.68 22.05 21.72L32 45.5L41.95 21.72C42.37 20.68 43.38 20 44.5 20C45.88 20 47 21.12 47 22.5V45"
+              stroke="#F0F0F0"
+              stroke-width="4.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </div>
       </div>
     </div>
