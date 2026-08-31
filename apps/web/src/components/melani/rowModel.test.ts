@@ -19,7 +19,7 @@ function base(overrides: Partial<EmployeeSummary>): EmployeeSummary {
 describe("rowPreview", () => {
   it("renders a waiting-for-you line from the ask", () => {
     const summary = base({
-      ask: { text: "Approve v8", lead: "Approve v8", detail: "before Monday" },
+      ask: { text: "Approve v8", lead: "Approve v8", detail: "before Monday", action: null },
       state: "needs-you",
       total: 1,
     });
