@@ -1421,3 +1421,473 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   color: var(--sand-text-quaternary);
   line-height: 1.5;
 }
+
+/* ---------------------------------------------------------------------- */
+/* MELANI SHELL — the agent-centric front door (UI-SPEC §1, §6 N3.1)       */
+/* ---------------------------------------------------------------------- */
+
+/* The whole window: a fixed 2-column grid, sidebar | stage. Values from the
+   reference: minmax(0,1fr) on the stage so a long transcript can never push
+   the grid wider than the viewport. */
+.melani-shell {
+  display: grid;
+  grid-template-columns: var(--melani-sidebar-width, 280px) minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  background: var(--sand-chrome);
+  color: var(--sand-text-primary);
+  overflow: hidden;
+  /* The signature sidebar-width settle (UI-SPEC §4: 240ms, .22,1,.36,1).
+     Applied to grid-template-columns so collapse/expand eases. */
+  transition: grid-template-columns 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Mid-drag the width must track the pointer exactly — a transition would lag
+   it — so the animation is suppressed while dragging. */
+.melani-shell[data-dragging] {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-shell {
+    transition: none;
+  }
+}
+
+.melani-shell__sidebar {
+  position: relative;
+  min-width: 0;
+  height: 100dvh;
+  border-right: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-chrome);
+}
+
+.melani-shell__stage {
+  position: relative;
+  min-width: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--sand-editor);
+}
+
+/* The drag handle: a 6px hit-strip over the sidebar's right edge that widens
+   its visible hairline on hover. */
+.melani-shell__resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.melani-shell__resizer:hover::after,
+.melani-shell[data-dragging] .melani-shell__resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 2px;
+  height: 100%;
+  background: var(--sand-accent);
+  opacity: 0.7;
+}
+
+/* --- sidebar ---------------------------------------------------------- */
+
+.melani-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  gap: 6px;
+}
+
+.melani-sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding-top: 2px;
+}
+
+.melani-sidebar[data-collapsed] .melani-sidebar__header {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.melani-newbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-lg);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.melani-newbtn:hover {
+  background: var(--sand-fill-secondary);
+}
+
+.melani-newbtn__plus {
+  font-size: 15px;
+  line-height: 1;
+  color: var(--sand-text-secondary);
+}
+
+.melani-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-lg);
+  background: transparent;
+  color: var(--sand-text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-iconbtn:hover:not(:disabled) {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+}
+
+.melani-iconbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.melani-iconbtn--round {
+  border-radius: var(--sand-radius-full);
+}
+
+.melani-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--sand-stroke-tertiary);
+  border-radius: var(--sand-radius-lg);
+  background: var(--sand-fill-quinary);
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.melani-search:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-secondary);
+}
+
+.melani-search__glyph {
+  font-size: 13px;
+}
+
+.melani-sidebar__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0 -4px;
+  padding: 4px;
+}
+
+.melani-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* --- section ---------------------------------------------------------- */
+
+.melani-section__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.melani-section__head:hover {
+  color: var(--sand-text-secondary);
+}
+
+.melani-section__chevron {
+  display: inline-flex;
+  font-size: 12px;
+  transform: rotate(90deg);
+  transition: transform 0.14s var(--sand-ease-out-quint);
+}
+
+.melani-section__chevron[data-collapsed] {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-section__chevron {
+    transition: none;
+  }
+}
+
+.melani-section__title {
+  flex: 1;
+  text-align: left;
+}
+
+.melani-section__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--sand-text-quaternary);
+}
+
+.melani-section__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* --- employee row ----------------------------------------------------- */
+
+.melani-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--sand-radius-row);
+  background: transparent;
+  color: var(--sand-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.melani-row:hover {
+  background: var(--sand-fill-tertiary);
+}
+
+.melani-row:active {
+  background: var(--sand-fill-secondary);
+}
+
+.melani-row[data-selected] {
+  background: var(--sand-fill-secondary);
+}
+
+.melani-sidebar[data-collapsed] .melani-row {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 8px 0;
+  min-height: 52px;
+}
+
+.melani-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.melani-row__name {
+  font-size: var(--sand-font-base);
+  font-weight: 500;
+  color: var(--sand-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.melani-row__preview {
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.melani-row__trailing {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- avatar ----------------------------------------------------------- */
+
+.melani-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--melani-avatar-size, 34px);
+  height: var(--melani-avatar-size, 34px);
+  border-radius: var(--sand-radius-full);
+  flex-shrink: 0;
+  /* Deterministic hue from the employee id (persona.ts). Translucent fill over
+     base, per the sand color-mix rule — never a flat hex. */
+  background: color-mix(
+    in srgb,
+    hsl(var(--melani-avatar-hue, 210) 60% 55%) 26%,
+    var(--sand-chrome)
+  );
+  color: hsl(var(--melani-avatar-hue, 210) 70% 82%);
+  border: 1px solid color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 60% 55%) 40%, transparent);
+}
+
+.melani-avatar__glyph {
+  font-size: calc(var(--melani-avatar-size, 34px) * 0.42);
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.melani-avatar__dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--sand-radius-full);
+  border: 2px solid var(--sand-chrome);
+  background: var(--sand-text-quaternary);
+}
+
+.melani-avatar[data-status="working"] .melani-avatar__dot {
+  background: var(--sand-green);
+}
+
+.melani-avatar[data-status="attention"] .melani-avatar__dot {
+  background: var(--sand-yellow);
+}
+
+/* --- roster states (loading / empty / error) -------------------------- */
+
+.melani-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0;
+}
+
+.melani-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 10px;
+}
+
+.melani-sidebar[data-collapsed] .melani-skeleton__row {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.melani-skeleton__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-fill-tertiary);
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.melani-skeleton__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.melani-skeleton__line {
+  height: 9px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-fill-tertiary);
+  width: 70%;
+}
+
+.melani-skeleton__line--short {
+  width: 45%;
+}
+
+/* Shimmer sweep, disabled under reduced-motion so it never pegs the GPU. */
+.melani-skeleton__avatar::after,
+.melani-skeleton__line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--sand-fill-secondary), transparent);
+  transform: translateX(-100%);
+  animation: sand-sweep 1.4s linear infinite;
+}
+
+.melani-skeleton__line {
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-skeleton__avatar::after,
+  .melani-skeleton__line::after {
+    animation: none;
+    display: none;
+  }
+}
+
+.melani-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 14px;
+  text-align: center;
+  align-items: center;
+}
+
+.melani-state__title {
+  font-size: var(--sand-font-base);
+  font-weight: 500;
+  color: var(--sand-text-secondary);
+}
+
+.melani-state__body {
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-quaternary);
+  line-height: 1.5;
+  max-width: 220px;
+}
