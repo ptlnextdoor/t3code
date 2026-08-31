@@ -28,6 +28,7 @@ import {
   connectionDraftsRouteLayer,
   connectionSendRouteLayer,
   connectionsRouteLayer,
+  connectionConnectRouteLayer,
   startConnectionKeeper,
 } from "./connections/ConnectionRoutes.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -478,6 +479,7 @@ export const makeRoutesLayer = Layer.mergeAll(
     onboardBrainDumpRouteLayer,
     onboardCommitRouteLayer,
     connectionsRouteLayer,
+    connectionConnectRouteLayer,
     connectionDraftsRouteLayer,
     connectionSendRouteLayer,
     websocketRpcRouteLayer,

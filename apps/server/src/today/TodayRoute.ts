@@ -16,6 +16,8 @@ import * as NodeSqlite from "node:sqlite";
 import * as Effect from "effect/Effect";
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http";
 
+import { upcomingCalendarEvents, type CalendarEvent } from "../connections/CalendarActions.ts";
+
 /*
  * Paths are overridable so the server can run on a remote box (a VPS, a second
  * machine) while its inputs live wherever they actually are: synced into the
@@ -67,6 +69,12 @@ export interface TodayPayload {
   readonly rosterJson: string | null;
   readonly cards: ReadonlyArray<TodayTimelineCard>;
   readonly dayflowAvailable: boolean;
+  /**
+   * Upcoming calendar events, next 7 days, title+start+allday only (house rule
+   * on payload size). Empty when Calendar is not connected, so the client just
+   * renders nothing rather than a broken section.
+   */
+  readonly calendar: ReadonlyArray<CalendarEvent>;
 }
 
 function readNow(): { markdown: string | null; generatedAt: string | null } {
@@ -118,9 +126,12 @@ function readTodayCards(): { cards: Array<TodayTimelineCard>; available: boolean
   }
 }
 
-export function buildTodayPayload(): TodayPayload {
+export async function buildTodayPayload(): Promise<TodayPayload> {
   const { cards, available } = readTodayCards();
   const now = readNow();
+  // Calendar is a network read and may be absent; it must never block or fail
+  // the rest of the briefing, so it resolves to [] on any trouble.
+  const calendar = await upcomingCalendarEvents().catch(() => [] as Array<CalendarEvent>);
   return {
     generatedAt: new Date().toISOString(),
     nowGeneratedAt: now.generatedAt,
@@ -128,14 +139,15 @@ export function buildTodayPayload(): TodayPayload {
     rosterJson: readRosterJson(),
     cards,
     dayflowAvailable: available,
+    calendar,
   };
 }
 
 export const todayRouteLayer = HttpRouter.add(
   "GET",
   "/api/today",
-  Effect.sync(() =>
-    HttpServerResponse.jsonUnsafe(buildTodayPayload(), {
+  Effect.promise(async () =>
+    HttpServerResponse.jsonUnsafe(await buildTodayPayload(), {
       headers: { "Cache-Control": "private, max-age=60" },
     }),
   ),

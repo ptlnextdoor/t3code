@@ -15,6 +15,7 @@ import "../sand.css";
 import { TodayPanel } from "../components/TodayPanel";
 import { TeamPanel } from "../components/employees/TeamPanel";
 import { ConnectionBar } from "../components/connections/ConnectionBar";
+import { ConnectionCards } from "../components/connections/ConnectionCards";
 
 const root = document.getElementById("root");
 if (root) {
@@ -22,6 +23,7 @@ if (root) {
     <StrictMode>
       <div className="sand-rail">
         <ConnectionBar />
+        <ConnectionCards />
         <TeamPanel />
         <TodayPanel />
       </div>

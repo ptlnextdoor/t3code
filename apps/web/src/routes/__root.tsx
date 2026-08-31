@@ -19,6 +19,7 @@ import {
 } from "../components/employees/TeamPanelConnected";
 import { OnboardingGate } from "../components/onboarding/OnboardingGate";
 import { ConnectionBar } from "../components/connections/ConnectionBar";
+import { ConnectionCards } from "../components/connections/ConnectionCards";
 import { CommandPalette } from "../components/CommandPalette";
 import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
 import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
@@ -132,6 +133,7 @@ function RootRouteView() {
         <div className="sand-rail">
           <ConnectionBar />
           <OnboardingGate />
+          <ConnectionCards />
           <TeamPanelConnected />
           <TodayPanelConnected />
         </div>
