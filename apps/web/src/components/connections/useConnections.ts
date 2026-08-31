@@ -5,7 +5,7 @@
  * see Connected, Reconnecting, or a Reconnect button. Anything that cannot
  * currently work is disabled with a reason, never dead on click.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { resolvePrimaryEnvironmentHttpUrl } from "../../environments/primary/target";
 
@@ -26,8 +26,19 @@ const POLL_MS = 60_000;
 export function useConnections(): {
   connections: ReadonlyArray<ConnectionHealth>;
   gmail: ConnectionHealth | null;
+  calendar: ConnectionHealth | null;
+  /** Kick off a browser sign-in for one connection, then refresh status. */
+  connect: (id: string) => Promise<{ ok: boolean; detail: string }>;
+  /** True while a sign-in for this connection is in flight. */
+  connecting: string | null;
+  /** Force an immediate status refetch (used right after a sign-in). */
+  refresh: () => void;
 } {
   const [connections, setConnections] = useState<ReadonlyArray<ConnectionHealth>>([]);
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,9 +58,40 @@ export function useConnections(): {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [nonce]);
 
-  return { connections, gmail: connections.find((c) => c.id === "gmail") ?? null };
+  const connect = useCallback(
+    async (id: string) => {
+      setConnecting(id);
+      try {
+        const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/connections/connect"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        const result = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          detail?: string;
+        };
+        return { ok: result.ok === true, detail: result.detail ?? "Sign-in did not complete." };
+      } catch {
+        return { ok: false, detail: "Could not reach the sign-in service." };
+      } finally {
+        setConnecting(null);
+        refresh();
+      }
+    },
+    [refresh],
+  );
+
+  return {
+    connections,
+    gmail: connections.find((c) => c.id === "gmail") ?? null,
+    calendar: connections.find((c) => c.id === "calendar") ?? null,
+    connect,
+    connecting,
+    refresh,
+  };
 }
 
 /** True when mail actions should be offered at all. */

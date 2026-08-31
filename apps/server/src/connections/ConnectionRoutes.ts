@@ -14,7 +14,8 @@
 import * as Effect from "effect/Effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
-import { getAccessToken, gmailHealth } from "./GoogleConnector.ts";
+import { getAccessToken, gmailHealth, calendarHealth } from "./GoogleConnector.ts";
+import { beginLogin } from "./GoogleLogin.ts";
 import { listDrafts, sendDraft } from "./GmailActions.ts";
 
 /** Check often enough that a one-hour credential can never lapse unnoticed. */
@@ -24,8 +25,34 @@ export const connectionsRouteLayer = HttpRouter.add(
   "GET",
   "/api/connections",
   Effect.promise(async () => {
-    const gmail = await gmailHealth();
-    return HttpServerResponse.jsonUnsafe({ connections: [gmail] });
+    // Both share one Google account; report them as sibling cards.
+    const [gmail, calendar] = await Promise.all([gmailHealth(), calendarHealth()]);
+    return HttpServerResponse.jsonUnsafe({ connections: [gmail, calendar] });
+  }),
+);
+
+/**
+ * Start a browser sign-in for one connection. This is the entire product spec:
+ * a button that connects an account. The response resolves once the credential
+ * is stored, so the client can refresh its status immediately. include_granted
+ * _scopes on the authorize request keeps any existing Gmail grant intact when
+ * the user connects Calendar.
+ */
+export const connectionConnectRouteLayer = HttpRouter.add(
+  "POST",
+  "/api/connections/connect",
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const body = yield* Effect.orElseSucceed(request.json, () => ({}) as unknown);
+    const { id } = (body ?? {}) as { id?: string };
+    if (id !== "gmail" && id !== "calendar") {
+      return HttpServerResponse.jsonUnsafe(
+        { ok: false, detail: "Unknown connection." },
+        { status: 400 },
+      );
+    }
+    const result = yield* Effect.promise(() => beginLogin(id));
+    return HttpServerResponse.jsonUnsafe(result, { status: result.ok ? 200 : 400 });
   }),
 );
 

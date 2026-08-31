@@ -79,11 +79,56 @@ async function todayPayload() {
 
 const payload = await todayPayload();
 
+/**
+ * Mock the connections status surface so the account-connect cards render in the
+ * harness without a real Google login. T3CODE_CONN_STATE picks the scenario:
+ *   "connected"  — Gmail connected, Calendar connected (green)
+ *   "mixed"      — Gmail connected, Calendar not set up (the incremental case)
+ *   default      — both not set up (fresh install)
+ */
+function connectionsPayload() {
+  const state = process.env.T3CODE_CONN_STATE ?? "fresh";
+  const gmailConnected = {
+    id: "gmail",
+    label: "Gmail",
+    status: "connected",
+    account: "aayu@example.com",
+    detail: "Connected as aayu@example.com.",
+    canSend: true,
+  };
+  const calConnected = {
+    id: "calendar",
+    label: "Calendar",
+    status: "connected",
+    account: "aayu@example.com",
+    detail: "Connected as aayu@example.com.",
+    canSend: false,
+  };
+  const notSetUp = (id, label) => ({
+    id,
+    label,
+    status: "not-set-up",
+    account: null,
+    detail: "Not connected yet.",
+    canSend: false,
+  });
+  if (state === "connected") return { connections: [gmailConnected, calConnected] };
+  if (state === "mixed") return { connections: [gmailConnected, notSetUp("calendar", "Calendar")] };
+  return { connections: [notSetUp("gmail", "Gmail"), notSetUp("calendar", "Calendar")] };
+}
+
+const connections = connectionsPayload();
+
 const server = createServer((req, res) => {
   const url = new URL(req.url, "http://localhost");
   if (url.pathname === "/api/today") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(payload));
+    return;
+  }
+  if (url.pathname === "/api/connections") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(connections));
     return;
   }
   const rel = url.pathname === "/" ? "/today-harness.html" : url.pathname;

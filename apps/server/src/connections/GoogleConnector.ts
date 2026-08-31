@@ -42,8 +42,15 @@ const ASSUMED_LIFETIME_MS = 3600_000;
  */
 export type ConnectionStatus = "connected" | "reconnecting" | "needs-reconnect" | "not-set-up";
 
+/**
+ * The connections this instance can surface. Both ride the SAME Google account
+ * and the SAME stored credential: adding Calendar is one extra scope on the
+ * existing grant, never a second login for the same person.
+ */
+export type ConnectionId = "gmail" | "calendar";
+
 export interface ConnectionHealth {
-  readonly id: "gmail";
+  readonly id: ConnectionId;
   readonly label: string;
   readonly status: ConnectionStatus;
   /** Account the connection belongs to, shown as reassurance. */
@@ -53,6 +60,13 @@ export interface ConnectionHealth {
   /** Capabilities the user actually cares about. */
   readonly canSend: boolean;
 }
+
+/** OAuth scopes, kept in one place so the login flow and health checks agree. */
+export const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+/** Read-only is enough for deadlines; write comes later behind approval gates. */
+export const CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+/** openid + email let the flow capture the account address for reassurance. */
+export const IDENTITY_SCOPES = ["openid", "email"] as const;
 
 interface StoredToken {
   access_token: string;
@@ -130,6 +144,11 @@ function grantsSend(scope: string | undefined): boolean {
   return typeof scope === "string" ? scope.includes("gmail.send") : true;
 }
 
+/** Whether the stored grant includes read access to the calendar. */
+export function grantsCalendar(scope: string | undefined): boolean {
+  return typeof scope === "string" ? scope.includes("calendar.readonly") : false;
+}
+
 /**
  * Describe the connection in the user's language. This never throws, because a
  * status surface that can fail is worse than useless.
@@ -164,6 +183,51 @@ export async function gmailHealth(): Promise<ConnectionHealth> {
     ...base,
     account,
     canSend: grantsSend(stored.scope),
+    detail: account ? `Connected as ${account}.` : "Connected.",
+    status: "connected",
+  };
+}
+
+/**
+ * Describe the Calendar connection in the user's language.
+ *
+ * Calendar shares Gmail's stored credential, so its states are subtler than a
+ * separate login. A grant that has a refresh token but no calendar scope is a
+ * real, common state: the user connected Gmail before Calendar existed. That
+ * reads as "not-set-up" so the card shows a Connect button, and clicking it
+ * runs an INCREMENTAL grant (include_granted_scopes) that leaves Gmail intact.
+ */
+export async function calendarHealth(): Promise<ConnectionHealth> {
+  const stored = readJson<StoredToken>(TOKEN_PATH);
+  const base = { id: "calendar", label: "Calendar" } as const;
+
+  // No grant at all, or a grant that never included calendar: offer Connect.
+  if (!stored?.refresh_token || !grantsCalendar(stored.scope)) {
+    return {
+      ...base,
+      account: null,
+      canSend: false,
+      detail: "Not connected yet.",
+      status: "not-set-up",
+    };
+  }
+
+  const account = stored.email ?? null;
+  const token = await getAccessToken();
+  if (!token) {
+    return {
+      ...base,
+      account,
+      canSend: false,
+      detail: "Sign in again to keep reading your calendar.",
+      status: "needs-reconnect",
+    };
+  }
+
+  return {
+    ...base,
+    account,
+    canSend: false,
     detail: account ? `Connected as ${account}.` : "Connected.",
     status: "connected",
   };

@@ -23,10 +23,13 @@ import { guardHttpResponseWriteErrors } from "./httpResponseErrorGuard.ts";
 import { fixPath } from "./os-jank.ts";
 import { websocketRpcRouteLayer } from "./ws.ts";
 import { todayRouteLayer } from "./today/TodayRoute.ts";
+import { onboardBrainDumpRouteLayer, onboardCommitRouteLayer } from "./onboarding/OnboardRoute.ts";
+import { setupStateRouteLayer, setupProfileRouteLayer } from "./setup/SetupRoute.ts";
 import {
   connectionDraftsRouteLayer,
   connectionSendRouteLayer,
   connectionsRouteLayer,
+  connectionConnectRouteLayer,
   startConnectionKeeper,
 } from "./connections/ConnectionRoutes.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -474,7 +477,12 @@ export const makeRoutesLayer = Layer.mergeAll(
     attachmentUploadRouteLayer,
     staticAndDevRouteLayer,
     todayRouteLayer,
+    setupStateRouteLayer,
+    setupProfileRouteLayer,
+    onboardBrainDumpRouteLayer,
+    onboardCommitRouteLayer,
     connectionsRouteLayer,
+    connectionConnectRouteLayer,
     connectionDraftsRouteLayer,
     connectionSendRouteLayer,
     websocketRpcRouteLayer,

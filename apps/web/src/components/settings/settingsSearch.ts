@@ -209,6 +209,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     to: "/settings/providers",
   },
   {
+    id: "run-setup-again",
+    title: "Run setup again",
+    to: "/settings/integrations",
+    targetId: "setup",
+  },
+  {
     id: "agent-browser-access",
     title: "Agent browser access",
     to: "/settings/integrations",

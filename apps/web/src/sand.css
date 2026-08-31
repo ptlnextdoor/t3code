@@ -772,6 +772,122 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
 }
 
+/* ---------------------------------------------------------------------- */
+/* Connection cards (the account-connect surface)                         */
+/* ---------------------------------------------------------------------- */
+
+.conn-card {
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog);
+  background: var(--sand-editor);
+  box-shadow: var(--sand-shadow-sm);
+  overflow: hidden;
+}
+
+.conn-card__head {
+  padding: 10px 13px;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--sand-stroke-tertiary);
+}
+
+.conn-card__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.conn-card__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+}
+
+/* Hairline between stacked rows, never above the first. */
+.conn-card__row + .conn-card__row {
+  border-top: 1px solid var(--sand-stroke-tertiary);
+}
+
+.conn-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--sand-radius-full);
+  background: var(--conn-dot, var(--sand-text-quaternary));
+  flex-shrink: 0;
+}
+
+.conn-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.conn-card__label {
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+}
+
+.conn-card__detail {
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conn-card__connected {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--sand-green);
+  font-size: var(--sand-font-xs);
+}
+
+.conn-card__action {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 11px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--sand-accent) 34%, transparent);
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-accent) 18%, transparent);
+  color: var(--sand-accent);
+  font-size: var(--sand-font-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.conn-card__action:hover {
+  background: color-mix(in srgb, var(--sand-accent) 26%, transparent);
+}
+
+.conn-card__action:active {
+  transform: scale(0.98);
+}
+
+.conn-card__action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.conn-card__notice {
+  padding: 9px 13px;
+  border-top: 1px solid var(--sand-stroke-tertiary);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conn-card__action:active {
+    transform: none;
+  }
+}
+
 /* Disabled controls must read as unavailable, never as broken. */
 .today-act:disabled {
   opacity: 0.4;
@@ -794,4 +910,493 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   color: var(--sand-yellow);
   font-size: var(--sand-font-xs);
   line-height: var(--sand-line-xs);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Onboarding — the voice-note front door (N2.1)                          */
+/* ---------------------------------------------------------------------- */
+
+.onboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--sand-radius-xl);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-quaternary);
+  box-shadow: var(--sand-shadow-sm);
+}
+
+.onboard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.onboard__title {
+  font-size: var(--sand-font-lg);
+  line-height: var(--sand-line-lg);
+  letter-spacing: var(--sand-tracking-lg);
+  color: var(--sand-text-primary);
+  font-weight: 600;
+}
+
+.onboard__meta {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-tertiary);
+}
+
+.onboard__lede {
+  margin: 0;
+  font-size: var(--sand-font-sm);
+  line-height: var(--sand-line-base);
+  color: var(--sand-text-secondary);
+}
+
+.onboard__textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 180px;
+  padding: 12px;
+  border-radius: var(--sand-radius-lg);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  line-height: var(--sand-line-base);
+  font-family: inherit;
+  transition: border-color var(--sand-duration-normal) var(--sand-ease-out-quint);
+}
+
+.onboard__textarea::placeholder {
+  color: var(--sand-text-quaternary);
+}
+
+.onboard__textarea:focus {
+  outline: none;
+  border-color: var(--sand-accent);
+}
+
+.onboard__cta {
+  align-self: flex-start;
+  padding: 9px 18px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid transparent;
+  background: var(--sand-accent);
+  color: #0b0b0b;
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--sand-duration-fast) var(--sand-ease-out-quint),
+    filter var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard__cta:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.onboard__cta:active:not(:disabled) {
+  transform: scale(var(--sand-press-scale));
+}
+
+.onboard__cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.onboard__cta--danger {
+  background: var(--sand-red);
+  color: #150406;
+}
+
+.onboard__error {
+  padding: 8px 12px;
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-red) 12%, transparent);
+  color: var(--sand-red);
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-sm);
+}
+
+.onboard__warn {
+  padding: 6px 10px;
+  border-radius: var(--sand-radius-base);
+  background: color-mix(in srgb, var(--sand-yellow) 12%, transparent);
+  color: var(--sand-yellow);
+  font-size: var(--sand-font-xs);
+}
+
+.onboard__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--sand-radius-row);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+}
+
+.onboard-card--merging {
+  border-color: var(--sand-accent);
+  background: color-mix(in srgb, var(--sand-accent) 8%, transparent);
+}
+
+.onboard-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.onboard-card__name {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.onboard-card__name:hover {
+  border-color: var(--sand-stroke-secondary);
+}
+
+.onboard-card__name:focus {
+  outline: none;
+  border-color: var(--sand-accent);
+  background: var(--sand-fill-secondary);
+}
+
+.onboard-card__role {
+  font-size: var(--sand-font-xs);
+  line-height: var(--sand-line-sm);
+  color: var(--sand-text-tertiary);
+}
+
+.onboard-card__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.onboard-card__act {
+  padding: 4px 10px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-xs);
+  cursor: pointer;
+  transition: background var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard-card__act:hover:not(:disabled) {
+  background: var(--sand-fill-active);
+  color: var(--sand-text-primary);
+}
+
+.onboard-card__act:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.onboard-card__act--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sand-red) 18%, transparent);
+  color: var(--sand-red);
+}
+
+.onboard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.onboard__back {
+  padding: 8px 14px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+}
+
+.onboard__back:hover {
+  color: var(--sand-text-secondary);
+}
+
+.onboard__done {
+  padding: 14px;
+  text-align: center;
+  color: var(--sand-green);
+  font-size: var(--sand-font-base);
+}
+
+.onboard__reopen {
+  align-self: flex-start;
+  padding: 5px 12px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-xs);
+  cursor: pointer;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.onboard__reopen:hover {
+  color: var(--sand-text-secondary);
+}
+
+/* ── Setup wizard (N2.8) ─────────────────────────────────────────────────
+ * The first-run ribbon. One step visible at a time, a progress rail on top,
+ * a rise-in per step. Sand tokens only; no continuously repainting animation
+ * (t3code perf rule) — the rise plays once via `both` and stops.
+ */
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  border-radius: var(--sand-radius-lg, 10px);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-quinary);
+}
+
+.setup__rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setup__rail-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.setup__rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-fill-primary);
+  flex-shrink: 0;
+  transition: background var(--sand-duration-normal) var(--sand-ease-out-quint);
+}
+
+.setup__rail-item--active .setup__rail-dot {
+  background: var(--sand-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sand-accent) 22%, transparent);
+}
+
+.setup__rail-item--done .setup__rail-dot {
+  background: var(--sand-green);
+}
+
+.setup__rail-label {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup__rail-item--active .setup__rail-label {
+  color: var(--sand-text-secondary);
+}
+
+.setup__rail-item--done .setup__rail-label {
+  color: var(--sand-text-tertiary);
+}
+
+.setup__stage {
+  min-height: 0;
+}
+
+.setup-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setup-step__eyebrow {
+  font-size: var(--sand-font-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sand-text-quaternary);
+}
+
+.setup-step__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+  line-height: 1.25;
+}
+
+.setup-step__blurb {
+  margin: 0;
+  font-size: var(--sand-font-base);
+  line-height: 1.55;
+  color: var(--sand-text-tertiary);
+}
+
+.setup-step__label {
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-secondary);
+  margin-top: 4px;
+}
+
+.setup-step__input {
+  padding: 9px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-base);
+  outline: none;
+  transition: border-color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-step__input:focus {
+  border-color: var(--sand-accent);
+}
+
+.setup-step__error {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-red);
+}
+
+.setup-step__cta,
+.setup__next {
+  align-self: flex-start;
+  padding: 8px 18px;
+  border-radius: var(--sand-radius-full);
+  border: none;
+  background: var(--sand-accent);
+  color: var(--sand-chrome);
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-step__cta:disabled,
+.setup__next:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.setup__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.setup__nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setup__back,
+.setup__later {
+  padding: 6px 14px;
+  border-radius: var(--sand-radius-full);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup__back:hover,
+.setup__later:hover {
+  color: var(--sand-text-secondary);
+}
+
+/* GitHub "coming soon" card control — honest, disabled-looking, not clickable. */
+.conn-card__soon {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.setup-remote__connected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--sand-font-base);
+  color: var(--sand-text-secondary);
+  padding: 10px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-tertiary);
+}
+
+.setup-remote__lede {
+  margin: 0 0 8px;
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-tertiary);
+}
+
+.setup-remote__code-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.setup-remote__code {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-editor);
+  color: var(--sand-text-secondary);
+  font-family: var(--sand-font-mono, ui-monospace, monospace);
+  font-size: var(--sand-font-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.setup-remote__copy {
+  padding: 0 14px;
+  border-radius: var(--sand-radius-base);
+  border: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--sand-duration-fast) var(--sand-ease-out-quint);
+}
+
+.setup-remote__copy:hover {
+  color: var(--sand-text-primary);
+}
+
+.setup-remote__note {
+  margin: 8px 0 0;
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  line-height: 1.5;
 }
