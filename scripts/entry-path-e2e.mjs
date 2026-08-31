@@ -7,10 +7,12 @@
  *
  *   1. Pair with a FRESH one-time token minted from the running server, land
  *      on the main UI (proves the pairing round-trip works end to end).
- *   2. Click the first employee row: EITHER a thread/composer opens OR a
- *      VISIBLE reason renders (never a silent no-op). On a project-less
- *      install the reason must carry a recovery action.
- *   3. Click the first non-Send Queue action: same guarantee.
+ *   2. Click the first employee row on a PROJECTLESS install: a thread must
+ *      OPEN (composer visible). Zero-config self-provisioning means the
+ *      employee silently creates its workspace and opens the conversation —
+ *      it must NEVER show a "no project" reason or ask for infrastructure.
+ *   3. Click the first non-Send Queue action: same guarantee — it opens a
+ *      conversation, never a no-project notice.
  *   4. Pair with a BURNED token (submit the same token twice): the second
  *      attempt must land on a recovery surface with a working path forward,
  *      not a dead-end "Invalid pairing token".
@@ -169,28 +171,37 @@ async function main() {
     );
     assert(ui.emp > 0, `Team rail rendered ${ui.emp} employees`);
 
-    // -- 2. Employee click: opens OR visible reason ----------------------
+    // -- 2. Employee click on a projectless install: a thread OPENS ------
+    // Zero-config: the employee silently self-provisions its workspace and
+    // opens the conversation. It must never surface a "no project" reason.
     console.log("\n== clicking the first employee ==");
     const before = await evalJs(cdp, "location.href");
     await evalJs(cdp, `document.querySelector('.emp').click()`);
-    await sleep(1500);
-    const emp = await evalJs(
-      cdp,
-      `(() => ({
-      urlChanged: location.href !== ${JSON.stringify(before)},
-      composer: !!document.querySelector('textarea, [contenteditable="true"], [data-testid*="composer"]'),
-      notice: document.querySelector('[data-testid="team-panel-notice"]')?.innerText ?? null,
-      action: !!document.querySelector('[data-testid="team-panel-notice"] .team-panel__notice-action'),
-    }))()`,
-    );
-    const empOk = emp.urlChanged || emp.composer || (emp.notice && emp.notice.trim().length > 0);
+    // Self-provision is async (create project -> navigate), so poll a few
+    // seconds for the thread to land rather than sampling once.
+    let emp = { urlChanged: false, composer: false, notice: null };
+    for (let i = 0; i < 20; i++) {
+      await sleep(500);
+      emp = await evalJs(
+        cdp,
+        `(() => ({
+        urlChanged: location.href !== ${JSON.stringify(before)},
+        composer: !!document.querySelector('textarea, [contenteditable="true"], [data-testid*="composer"]'),
+        notice: document.querySelector('[data-testid="team-panel-notice"]')?.innerText ?? null,
+      }))()`,
+      );
+      if (emp.urlChanged || emp.composer) break;
+    }
     assert(
-      empOk,
-      `employee click did its job OR showed a reason (opened=${emp.urlChanged || emp.composer}, notice=${JSON.stringify(emp.notice)})`,
+      emp.urlChanged || emp.composer,
+      `employee click OPENED a thread (urlChanged=${emp.urlChanged}, composer=${emp.composer}, notice=${JSON.stringify(emp.notice)})`,
     );
-    if (emp.notice) assert(emp.action, "no-project reason carries a recovery action button");
+    assert(
+      !emp.notice || !/no project|add a project/i.test(emp.notice),
+      `employee click showed NO no-project notice (notice=${JSON.stringify(emp.notice)})`,
+    );
 
-    // -- 3. Queue action: opens OR visible reason ------------------------
+    // -- 3. Queue action on a projectless install: a thread OPENS --------
     console.log("\n== clicking the first Queue action ==");
     if (ui.today) {
       const beforeQ = await evalJs(cdp, "location.href");
@@ -203,23 +214,28 @@ async function main() {
         return acts[0].textContent;
       })()`,
       );
-      await sleep(1500);
-      const q = await evalJs(
-        cdp,
-        `(() => ({
-        urlChanged: location.href !== ${JSON.stringify(beforeQ)},
-        composer: !!document.querySelector('textarea, [contenteditable="true"], [data-testid*="composer"]'),
-        notice: document.querySelector('[data-testid="today-panel-notice"]')?.innerText ?? null,
-        action: !!document.querySelector('[data-testid="today-panel-notice"] .team-panel__notice-action'),
-      }))()`,
-      );
-      const qOk = q.urlChanged || q.composer || (q.notice && q.notice.trim().length > 0);
+      let q = { urlChanged: false, composer: false, notice: null };
+      for (let i = 0; i < 20; i++) {
+        await sleep(500);
+        q = await evalJs(
+          cdp,
+          `(() => ({
+          urlChanged: location.href !== ${JSON.stringify(beforeQ)},
+          composer: !!document.querySelector('textarea, [contenteditable="true"], [data-testid*="composer"]'),
+          notice: document.querySelector('[data-testid="today-panel-notice"]')?.innerText ?? null,
+        }))()`,
+        );
+        if (q.urlChanged || q.composer) break;
+      }
       assert(acted !== null, `found an actionable Queue row (action=${JSON.stringify(acted)})`);
       assert(
-        qOk,
-        `Queue click did its job OR showed a reason (opened=${q.urlChanged || q.composer}, notice=${JSON.stringify(q.notice)})`,
+        q.urlChanged || q.composer,
+        `Queue click OPENED a thread (urlChanged=${q.urlChanged}, composer=${q.composer}, notice=${JSON.stringify(q.notice)})`,
       );
-      if (q.notice) assert(q.action, "Queue no-project reason carries a recovery action button");
+      assert(
+        !q.notice || !/no project|add a project/i.test(q.notice),
+        `Queue click showed NO no-project notice (notice=${JSON.stringify(q.notice)})`,
+      );
     } else {
       assert(false, "Queue panel present to test");
     }

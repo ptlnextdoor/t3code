@@ -219,9 +219,10 @@ export function TodayPanel({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState<Date>(() => new Date());
   const [busy, setBusy] = useState<string | null>(null);
-  // A notice can be a bare string (send results, "no owner") or a full
-  // outcome carrying a recovery action (the no-project blocker). Normalised to
-  // an outcome so the render has one shape to deal with.
+  // A notice carries a human reason for a REAL failure (send results, "no
+  // owner", server unreachable). "No project yet" is NOT one of them: the
+  // connected opener self-provisions a workspace, so a click always tries to
+  // open a conversation rather than handing infrastructure back to the user.
   const [notice, setNotice] = useState<PanelOpenOutcome>(null);
   const { gmail } = useConnections();
 
@@ -265,9 +266,9 @@ export function TodayPanel({
         setNotice({ reason: `No owner found for: ${item.text.slice(0, 48)}` });
         return;
       }
-      // The opener returns an outcome when it cannot open (e.g. no project
-      // yet). Surface it — with its recovery action — instead of dropping it,
-      // which was why the queue buttons silently no-oped on a fresh install.
+      // The opener self-provisions a workspace when none exists, so this only
+      // returns a reason on a genuine failure (server unreachable). Surface it
+      // instead of dropping it — but the common path is a thread opening.
       const outcome = await onOpenItem(buildItemBriefing(employee, item.text, item.action));
       setNotice(outcome ?? null);
       return;
@@ -352,15 +353,6 @@ export function TodayPanel({
           {notice ? (
             <div className="team-panel__notice" data-testid="today-panel-notice" role="status">
               <span>{notice.reason}</span>
-              {notice.action ? (
-                <button
-                  type="button"
-                  className="team-panel__notice-action"
-                  onClick={() => notice.action?.run()}
-                >
-                  {notice.action.label}
-                </button>
-              ) : null}
             </div>
           ) : null}
           <div className="today-panel__body sand-stagger">
