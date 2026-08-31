@@ -2,7 +2,7 @@ import type { AuthSessionState } from "@t3tools/contracts";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import React, { startTransition, useEffect, useRef, useState, useCallback } from "react";
 
-import { APP_DISPLAY_NAME } from "../../branding";
+import { APP_DISPLAY_NAME, APP_TAGLINE } from "../../branding";
 import { connectPairing } from "../../connection/onboarding";
 import {
   peekPairingTokenFromUrl,
@@ -16,21 +16,28 @@ import { useAtomCommand } from "../../state/use-atom-command";
 
 export function PairingPendingSurface() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(44rem_16rem_at_top,color-mix(in_srgb,var(--color-emerald-500)_14%,transparent),transparent)]" />
-        <div className="absolute inset-y-0 left-0 w-72 bg-[radial-gradient(28rem_18rem_at_left,color-mix(in_srgb,var(--color-sky-500)_10%,transparent),transparent)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--background)_90%,var(--color-black))_0%,var(--background)_55%)]" />
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-6"
+      style={{ background: "var(--sand-chrome)", color: "var(--sand-text-primary)" }}
+    >
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(48rem_18rem_at_top,rgba(255,255,255,0.05),transparent)]" />
       </div>
 
-      <section className="relative w-full max-w-xl rounded-2xl border border-border/80 bg-card/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-8">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+      <section className="sand-surface sand-rise relative w-full max-w-xl p-6 sm:p-8">
+        <p
+          className="text-[11px] font-semibold uppercase"
+          style={{ letterSpacing: "0.18em", color: "var(--sand-text-tertiary)" }}
+        >
           {APP_DISPLAY_NAME}
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1
+          className="mt-3 text-2xl font-semibold sm:text-3xl"
+          style={{ letterSpacing: "var(--sand-tracking-lg)" }}
+        >
           Pairing with this environment
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--sand-text-secondary)" }}>
           Validating the pairing link and preparing your session.
         </p>
       </section>
@@ -97,27 +104,38 @@ export function PairingRouteSurface({
   }, [submitCredential]);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(44rem_16rem_at_top,color-mix(in_srgb,var(--color-emerald-500)_14%,transparent),transparent)]" />
-        <div className="absolute inset-y-0 left-0 w-72 bg-[radial-gradient(28rem_18rem_at_left,color-mix(in_srgb,var(--color-sky-500)_10%,transparent),transparent)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--background)_90%,var(--color-black))_0%,var(--background)_55%)]" />
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-6"
+      style={{ background: "var(--sand-chrome)", color: "var(--sand-text-primary)" }}
+    >
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(48rem_18rem_at_top,rgba(255,255,255,0.05),transparent)]" />
       </div>
 
-      <section className="relative w-full max-w-xl rounded-2xl border border-border/80 bg-card/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-8">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+      <section className="sand-surface sand-rise relative w-full max-w-xl p-6 sm:p-8">
+        <p
+          className="text-[11px] font-semibold uppercase"
+          style={{ letterSpacing: "0.18em", color: "var(--sand-text-tertiary)" }}
+        >
           {APP_DISPLAY_NAME}
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Pair with this environment
+        <h1
+          className="mt-3 text-2xl font-semibold sm:text-3xl"
+          style={{ letterSpacing: "var(--sand-tracking-lg)" }}
+        >
+          {APP_TAGLINE}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--sand-text-secondary)" }}>
           {describeAuthGate(auth.bootstrapMethods)}
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="pairing-token">
+            <label
+              className="text-sm font-medium"
+              htmlFor="pairing-token"
+              style={{ color: "var(--sand-text-secondary)" }}
+            >
               Pairing token
             </label>
             <Input
@@ -135,7 +153,14 @@ export function PairingRouteSurface({
           </div>
 
           {errorMessage ? (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/6 px-3 py-2 text-sm text-destructive">
+            <div
+              className="rounded-lg px-3 py-2 text-sm"
+              style={{
+                border: "1px solid color-mix(in srgb, var(--sand-red) 30%, transparent)",
+                background: "color-mix(in srgb, var(--sand-red) 8%, transparent)",
+                color: "var(--sand-red)",
+              }}
+            >
               {errorMessage}
             </div>
           ) : null}
@@ -155,7 +180,14 @@ export function PairingRouteSurface({
           </div>
         </form>
 
-        <div className="mt-6 rounded-lg border border-border/70 bg-background/55 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+        <div
+          className="mt-6 rounded-lg px-3 py-3 text-xs leading-relaxed"
+          style={{
+            border: "1px solid var(--sand-stroke-tertiary)",
+            background: "var(--sand-fill-quinary)",
+            color: "var(--sand-text-tertiary)",
+          }}
+        >
           {describeSupportedMethods(auth.bootstrapMethods)}
         </div>
       </section>
@@ -233,34 +265,60 @@ export function HostedPairingRouteSurface() {
   const request = hostedPairingRequestRef.current;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(44rem_16rem_at_top,color-mix(in_srgb,var(--color-emerald-500)_14%,transparent),transparent)]" />
-        <div className="absolute inset-y-0 left-0 w-72 bg-[radial-gradient(28rem_18rem_at_left,color-mix(in_srgb,var(--color-sky-500)_10%,transparent),transparent)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--background)_90%,var(--color-black))_0%,var(--background)_55%)]" />
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-6"
+      style={{ background: "var(--sand-chrome)", color: "var(--sand-text-primary)" }}
+    >
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(48rem_18rem_at_top,rgba(255,255,255,0.05),transparent)]" />
       </div>
 
-      <section className="relative w-full max-w-xl rounded-2xl border border-border/80 bg-card/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-8">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+      <section className="sand-surface sand-rise relative w-full max-w-xl p-6 sm:p-8">
+        <p
+          className="text-[11px] font-semibold uppercase"
+          style={{ letterSpacing: "0.18em", color: "var(--sand-text-tertiary)" }}
+        >
           {APP_DISPLAY_NAME}
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1
+          className="mt-3 text-2xl font-semibold sm:text-3xl"
+          style={{ letterSpacing: "var(--sand-tracking-lg)" }}
+        >
           {status === "paired"
             ? "Backend paired"
             : status === "error"
               ? "Pairing failed"
               : "Pairing backend"}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
+        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--sand-text-secondary)" }}>
+          {message}
+        </p>
 
         {request ? (
-          <div className="mt-5 rounded-lg border border-border/70 bg-background/55 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
-            Host: <span className="font-mono text-foreground/80">{request.host}</span>
+          <div
+            className="mt-5 rounded-lg px-3 py-3 text-xs leading-relaxed"
+            style={{
+              border: "1px solid var(--sand-stroke-tertiary)",
+              background: "var(--sand-fill-quinary)",
+              color: "var(--sand-text-tertiary)",
+            }}
+          >
+            Host:{" "}
+            <span className="font-mono" style={{ color: "var(--sand-text-secondary)" }}>
+              {request.host}
+            </span>
           </div>
         ) : null}
 
         {status === "error" ? (
-          <div className="mt-5 rounded-lg border border-destructive/30 bg-destructive/6 px-3 py-2 text-sm text-destructive">
+          <div
+            className="mt-5 rounded-lg px-3 py-2 text-sm"
+            style={{
+              border: "1px solid color-mix(in srgb, var(--sand-red) 30%, transparent)",
+              background: "color-mix(in srgb, var(--sand-red) 8%, transparent)",
+              color: "var(--sand-red)",
+            }}
+          >
             Verify the backend is reachable from this browser, supports CORS for hosted clients, and
             is served over HTTPS when opening this page from HTTPS.
           </div>

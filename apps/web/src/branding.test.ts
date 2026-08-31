@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import * as NodeFS from "node:fs";
 import {
   resolveServerBackedAppDisplayName,
   resolveServerBackedAppStageLabel,
@@ -47,7 +48,7 @@ describe("branding", () => {
     expect(branding.HOSTED_APP_CHANNEL).toBe("nightly");
     expect(branding.HOSTED_APP_CHANNEL_LABEL).toBe("Nightly");
     expect(branding.APP_STAGE_LABEL).toBe("Nightly");
-    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code (Nightly)");
+    expect(branding.APP_DISPLAY_NAME).toBe("Melani (Nightly)");
   });
 
   it("does not label the latest hosted app channel", async () => {
@@ -58,7 +59,7 @@ describe("branding", () => {
     expect(branding.HOSTED_APP_CHANNEL).toBe("latest");
     expect(branding.HOSTED_APP_CHANNEL_LABEL).toBe("Latest");
     expect(branding.APP_STAGE_LABEL).toBe("Latest");
-    expect(branding.APP_DISPLAY_NAME).toBe("T3 Code");
+    expect(branding.APP_DISPLAY_NAME).toBe("Melani");
   });
 
   it("ignores unknown hosted app channels", async () => {
@@ -69,6 +70,33 @@ describe("branding", () => {
     expect(branding.HOSTED_APP_CHANNEL).toBeNull();
     expect(branding.HOSTED_APP_CHANNEL_LABEL).toBeNull();
   });
+
+  it("presents Melani as the product identity by default", async () => {
+    const branding = await import("./branding");
+
+    expect(branding.APP_PRODUCT_NAME).toBe("Melani");
+    expect(branding.APP_BASE_NAME).toBe("Melani");
+    expect(branding.APP_TAGLINE).toBe("Get your life together.");
+    // Dev builds stay honestly labeled, but the base is the superapp's own name.
+    expect(branding.APP_DISPLAY_NAME.startsWith("Melani")).toBe(true);
+    expect(branding.APP_DISPLAY_NAME).not.toContain("T3 Code");
+  });
+});
+
+describe("brand surfaces carry no hardcoded host name", () => {
+  // The pairing screen is the app's front door. It must render the brand from
+  // the module, never a baked-in "T3 Code"/"T3 CODE" literal.
+  const surfaces = [
+    "./components/auth/PairingRouteSurface.tsx",
+    "./components/SplashScreen.tsx",
+  ] as const;
+
+  for (const surface of surfaces) {
+    it(`${surface} has no literal T3 brand string`, () => {
+      const source = NodeFS.readFileSync(new URL(surface, import.meta.url), "utf8");
+      expect(source).not.toMatch(/T3\s*Code/i);
+    });
+  }
 });
 
 describe("branding logic", () => {

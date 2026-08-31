@@ -1,10 +1,13 @@
-# Testing t3code (thanks for trying it)
+# Testing Melani (thanks for trying it)
 
-You're looking at an early build of a personal "superapp": you tell it what's on
-your plate, and it staffs a little team of employees that watch your fronts and
-surface what actually needs you right now. This is a rough first cut — you are
-one of the first people outside the build to touch it. Honest feedback is the
-whole point.
+You're looking at an early build of a personal "superapp" called **Melani**: you
+tell it what's on your plate, and it staffs a little team of employees that watch
+your fronts and surface what actually needs you right now. This is a rough first
+cut — you are one of the first people outside the build to touch it. Honest
+feedback is the whole point.
+
+> Note: the repo is named `t3code` (it's built on the open-source t3code
+> harness); the app you'll see and use is **Melani**. Same thing, two names.
 
 ## Run it (one command)
 
