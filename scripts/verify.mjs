@@ -46,6 +46,20 @@ const gates = [
     cmd: "node",
     args: ["scripts/team-e2e.mjs"],
   },
+  // Opt-in browser gate: the entry-path regression net (pairing + Team + Queue
+  // + burned-token recovery). It drives a real headless browser against a
+  // running web origin, so it only runs when ENTRY_PATH_E2E_BASE names one —
+  // keeping the default `verify` runnable where no browser/server is present.
+  ...(process.env.ENTRY_PATH_E2E_BASE
+    ? [
+        {
+          name: "entry-path",
+          label: `node scripts/entry-path-e2e.mjs ${process.env.ENTRY_PATH_E2E_BASE}`,
+          cmd: "node",
+          args: ["scripts/entry-path-e2e.mjs", process.env.ENTRY_PATH_E2E_BASE],
+        },
+      ]
+    : []),
 ];
 
 /** Run one command, inheriting stdio so its output streams live. */

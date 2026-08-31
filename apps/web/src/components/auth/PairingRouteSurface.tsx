@@ -9,10 +9,56 @@ import {
   stripPairingTokenFromUrl,
   submitServerAuthCredential,
 } from "../../environments/primary";
+import { isLoopbackHostname } from "../../environments/primary/target";
 import { readHostedPairingRequest } from "../../hostedPairing";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useAtomCommand } from "../../state/use-atom-command";
+
+/**
+ * Same-origin loopback means the server that minted the link is this machine's
+ * own server, reachable at this very origin. A one-time link opened twice (or
+ * after the app consumed it) burns the token; the honest recovery is a fresh
+ * link from the app that launched it, not a retry of the dead token. We show
+ * that guidance rather than leaving the user on a dead-end error.
+ */
+function isSameOriginLoopback(): boolean {
+  try {
+    return isLoopbackHostname(window.location.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** Shared card chrome for every pairing state, so a new state can't drift. */
+function PairingShell({
+  title,
+  intro,
+  children,
+}: {
+  title: string;
+  intro: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
+      <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(44rem_16rem_at_top,color-mix(in_srgb,var(--color-emerald-500)_14%,transparent),transparent)]" />
+        <div className="absolute inset-y-0 left-0 w-72 bg-[radial-gradient(28rem_18rem_at_left,color-mix(in_srgb,var(--color-sky-500)_10%,transparent),transparent)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--background)_90%,var(--color-black))_0%,var(--background)_55%)]" />
+      </div>
+
+      <section className="relative w-full max-w-xl rounded-2xl border border-border/80 bg-card/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-8">
+        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+          {APP_DISPLAY_NAME}
+        </p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{intro}</p>
+        {children}
+      </section>
+    </div>
+  );
+}
 
 export function PairingPendingSurface() {
   return (
@@ -51,12 +97,17 @@ export function PairingRouteSurface({
   const [credential, setCredential] = useState(() => autoPairTokenRef.current ?? "");
   const [errorMessage, setErrorMessage] = useState(initialErrorMessage ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // A link that failed is the burned-token case: the URL carried a one-time
+  // token and the server rejected it. Retrying the same dead token is a dead
+  // end, so we swap the error for recovery guidance instead.
+  const [linkTokenFailed, setLinkTokenFailed] = useState(false);
   const autoSubmitAttemptedRef = useRef(false);
 
   const submitCredential = useCallback(
-    async (nextCredential: string) => {
+    async (nextCredential: string, fromLink: boolean) => {
       setIsSubmitting(true);
       setErrorMessage("");
+      setLinkTokenFailed(false);
 
       const submitError = await submitServerAuthCredential(nextCredential).then(
         () => null,
@@ -66,7 +117,11 @@ export function PairingRouteSurface({
       setIsSubmitting(false);
 
       if (submitError) {
-        setErrorMessage(submitError);
+        if (fromLink) {
+          setLinkTokenFailed(true);
+        } else {
+          setErrorMessage(submitError);
+        }
         return;
       }
 
@@ -80,7 +135,7 @@ export function PairingRouteSurface({
   const handleSubmit = useCallback(
     async (event?: React.SubmitEvent<HTMLFormElement>) => {
       event?.preventDefault();
-      await submitCredential(credential);
+      await submitCredential(credential, false);
     },
     [submitCredential, credential],
   );
@@ -93,8 +148,72 @@ export function PairingRouteSurface({
 
     autoSubmitAttemptedRef.current = true;
     stripPairingTokenFromUrl();
-    void submitCredential(token);
+    void submitCredential(token, true);
   }, [submitCredential]);
+
+  // The link this browser opened carried a token the backend refused — almost
+  // always a one-time link that was already used. Give a working path forward
+  // rather than a dead error: on a loopback origin the launching app is right
+  // here on this machine and can mint a fresh link; otherwise point back to
+  // whatever issued the link.
+  if (linkTokenFailed) {
+    const sameOrigin = isSameOriginLoopback();
+    return (
+      <PairingShell
+        title="This pairing link was already used"
+        intro="One-time pairing links work exactly once. This one has already been spent, so it can't open a session again."
+      >
+        <div className="rounded-lg border border-border/70 bg-background/55 px-3 py-3 text-sm leading-relaxed text-muted-foreground">
+          {sameOrigin ? (
+            <>
+              This server is running on this machine, so a fresh link is one command away: run{" "}
+              <span className="font-mono text-foreground/80">npx t3 pair</span> (or reopen the app
+              that launched this window) and open the new link. You can also paste a fresh token
+              below.
+            </>
+          ) : (
+            <>
+              Get a fresh one-time link from the app that launched this one, then open it. You can
+              also paste a fresh token below.
+            </>
+          )}
+        </div>
+
+        <form className="mt-5 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="pairing-token">
+              Pairing token
+            </label>
+            <Input
+              id="pairing-token"
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              disabled={isSubmitting}
+              nativeInput
+              onChange={(event) => setCredential(event.currentTarget.value)}
+              placeholder="Paste a fresh one-time token"
+              spellCheck={false}
+              value={credential}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={isSubmitting || credential.trim().length === 0} size="sm" type="submit">
+              {isSubmitting ? "Pairing..." : "Pair with token"}
+            </Button>
+            <Button
+              disabled={isSubmitting}
+              onClick={() => window.location.reload()}
+              size="sm"
+              variant="outline"
+            >
+              Reload app
+            </Button>
+          </div>
+        </form>
+      </PairingShell>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">

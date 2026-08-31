@@ -20,6 +20,7 @@ import {
   parseNowSections,
   stalenessNotice,
 } from "../todayPanel.logic";
+import type { PanelOpenOutcome } from "./panelOutcome";
 import { resolveRoster } from "./roster";
 import { countNeedingYou, summarizeEmployees, type EmployeeSummary } from "./summarize";
 
@@ -97,13 +98,13 @@ function EmployeeRow({
 export function TeamPanel({
   onOpenEmployee,
 }: {
-  /** Returns a reason string when it could not open, or null on success. */
-  onOpenEmployee?: (summary: EmployeeSummary) => void | Promise<string | null>;
+  /** Returns an outcome describing why it could not open, or null on success. */
+  onOpenEmployee?: (summary: EmployeeSummary) => void | Promise<PanelOpenOutcome>;
 } = {}) {
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [rosterJson, setRosterJson] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<PanelOpenOutcome>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,9 +134,12 @@ export function TeamPanel({
 
   const summaries = summarizeEmployees(parseNowSections(markdown), resolveRoster(rosterJson));
   const needing = countNeedingYou(summaries);
-  // One notice slot, one signal: a stale briefing outranks a transient
-  // open-failure reason, since it invalidates every row below it.
-  const shownNotice = stalenessNotice(generatedAt, new Date()) ?? notice;
+  // Two independent signals, each with its own slot: a stale briefing is a
+  // standing condition about the data, while an open-failure is feedback on
+  // the click the user just made. Collapsing them (the old `stale ?? notice`)
+  // hid the click reason behind the staleness banner, so the button read as
+  // dead. The click outcome is the actionable one, so it renders first.
+  const staleNotice = stalenessNotice(generatedAt, new Date());
 
   return (
     <div className="team-panel sand-rise" data-testid="team-panel">
@@ -144,7 +148,21 @@ export function TeamPanel({
         {needing > 0 ? <span className="sand-pill today-pill-now">{needing} need you</span> : null}
         <span className="team-panel__meta">{summaries.length} working</span>
       </div>
-      {shownNotice ? <div className="team-panel__notice">{shownNotice}</div> : null}
+      {outcome ? (
+        <div className="team-panel__notice" data-testid="team-panel-notice" role="status">
+          <span>{outcome.reason}</span>
+          {outcome.action ? (
+            <button
+              type="button"
+              className="team-panel__notice-action"
+              onClick={() => outcome.action?.run()}
+            >
+              {outcome.action.label}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {staleNotice ? <div className="team-panel__notice">{staleNotice}</div> : null}
       <div className="team-panel__body sand-stagger">
         {summaries.map((summary) => (
           <EmployeeRow
@@ -153,7 +171,7 @@ export function TeamPanel({
             onOpen={(next) => {
               const result = onOpenEmployee?.(next);
               if (result instanceof Promise) {
-                void result.then((reason) => setNotice(reason ?? null));
+                void result.then((nextOutcome) => setOutcome(nextOutcome ?? null));
               }
             }}
           />
