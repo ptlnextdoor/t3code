@@ -37,7 +37,7 @@ function hashId(id: string): number {
 
 /** Resolve the stable persona (initial + hue) for an employee id + name. */
 export function resolvePersona(id: string, name: string): Persona {
-  const trimmed = name.trim();
-  const initial = (trimmed.length > 0 ? trimmed[0] : id[0] ?? "?").toUpperCase();
+  const source = name.trim() || id || "?";
+  const initial = (source[0] ?? "?").toUpperCase();
   return { hue: hashId(id) % 360, initial };
 }
