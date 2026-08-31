@@ -1,5 +1,7 @@
 {
   "id": "/",
+  "name": "Melani",
+  "short_name": "Melani",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

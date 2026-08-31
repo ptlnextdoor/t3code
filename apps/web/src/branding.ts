@@ -12,11 +12,20 @@ function readInjectedDesktopAppBranding(): DesktopAppBranding | null {
 const injectedDesktopAppBranding = readInjectedDesktopAppBranding();
 const hostedAppChannel = import.meta.env.VITE_HOSTED_APP_CHANNEL?.trim().toLowerCase();
 
+/**
+ * The single source of truth for the superapp's product identity. Change these
+ * two lines and every user-visible surface (title, splash, pairing, rail,
+ * settings, wizard) follows. The repo is still named "t3code"; this is the
+ * face the owner sees, not a fork rename.
+ */
+export const APP_PRODUCT_NAME = "Melani";
+export const APP_TAGLINE = "Get your life together.";
+
 export const HOSTED_APP_CHANNEL =
   hostedAppChannel === "latest" || hostedAppChannel === "nightly" ? hostedAppChannel : null;
 export const HOSTED_APP_CHANNEL_LABEL =
   HOSTED_APP_CHANNEL === "nightly" ? "Nightly" : HOSTED_APP_CHANNEL === "latest" ? "Latest" : null;
-export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? "T3 Code";
+export const APP_BASE_NAME = injectedDesktopAppBranding?.baseName ?? APP_PRODUCT_NAME;
 export const APP_STAGE_LABEL =
   injectedDesktopAppBranding?.stageLabel ??
   HOSTED_APP_CHANNEL_LABEL ??
