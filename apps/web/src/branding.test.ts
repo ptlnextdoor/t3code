@@ -1,3 +1,4 @@
+// @effect-diagnostics nodeBuiltinImport:off
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import * as NodeFS from "node:fs";
 import {
