@@ -29,7 +29,7 @@ say() { printf "\n\033[1m%s\033[0m\n" "$*"; }
 # push them and point the server at them with env overrides.
 sync_inputs() {
   say "Syncing inputs to $TARGET"
-  ssh "$TARGET" "mkdir -p $REMOTE_HOME/knowledge-org $REMOTE_HOME/secrets"
+  ssh "$TARGET" "mkdir -p $REMOTE_HOME/knowledge-org $REMOTE_HOME/secrets $REMOTE_HOME/superapp"
   if [[ -f "$HOME/.jcode/knowledge-org/NOW.md" ]]; then
     scp -q "$HOME/.jcode/knowledge-org/NOW.md" "$TARGET:$REMOTE_HOME/knowledge-org/NOW.md"
     echo "  NOW.md pushed"
@@ -86,6 +86,7 @@ Environment=T3CODE_HOME=$REMOTE_HOME
 Environment=T3CODE_NOW_MD=$REMOTE_HOME/knowledge-org/NOW.md
 Environment=T3CODE_GOOGLE_CREDENTIALS=$REMOTE_HOME/secrets/google_credentials.json
 Environment=T3CODE_GOOGLE_TOKEN=$REMOTE_HOME/secrets/google_oauth.json
+Environment=T3CODE_ROSTER_JSON=$REMOTE_HOME/superapp/roster.json
 Restart=always
 RestartSec=5
 # Dayflow is Mac-only screen data; leaving it unset makes the panel degrade
