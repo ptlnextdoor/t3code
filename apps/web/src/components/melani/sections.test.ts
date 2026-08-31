@@ -26,8 +26,8 @@ describe("buildSections", () => {
       summary("ops", "dated", ["melani"]),
     ]);
     expect(sections).toHaveLength(1);
-    expect(sections[0].id).toBe(TEAM_SECTION_ID);
-    expect(sections[0].employees.map((s) => s.employee.id)).toEqual(["paper", "ops"]);
+    expect(sections[0]!.id).toBe(TEAM_SECTION_ID);
+    expect(sections[0]!.employees.map((s) => s.employee.id)).toEqual(["paper", "ops"]);
   });
 
   it("splits out calm, topicless employees into a synthetic Unassigned bucket", () => {
@@ -36,9 +36,9 @@ describe("buildSections", () => {
       summary("ghost", "calm", []),
     ]);
     expect(sections).toHaveLength(2);
-    expect(sections[1].id).toBe(UNASSIGNED_SECTION_ID);
-    expect(sections[1].synthetic).toBe(true);
-    expect(sections[1].employees.map((s) => s.employee.id)).toEqual(["ghost"]);
+    expect(sections[1]!.id).toBe(UNASSIGNED_SECTION_ID);
+    expect(sections[1]!.synthetic).toBe(true);
+    expect(sections[1]!.employees.map((s) => s.employee.id)).toEqual(["ghost"]);
   });
 
   it("omits the Unassigned bucket entirely when empty", () => {
@@ -49,6 +49,6 @@ describe("buildSections", () => {
   it("keeps a calm employee that still owns a topic in Team, not Unassigned", () => {
     const sections = buildSections([summary("paper", "calm", ["zaidi-paper"])]);
     expect(sections).toHaveLength(1);
-    expect(sections[0].id).toBe(TEAM_SECTION_ID);
+    expect(sections[0]!.id).toBe(TEAM_SECTION_ID);
   });
 });
