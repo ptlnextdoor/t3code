@@ -87,7 +87,12 @@ export function useRosterState(): RosterState {
     let loadedOnce = false;
     const load = async () => {
       try {
-        const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/today"));
+        // The TODAY payload is sent with a 60s private cache. That is fine for
+        // the timed refresh, but a hire must show at once, so bypass the HTTP
+        // cache here and always read the roster straight off the server.
+        const response = await fetch(resolvePrimaryEnvironmentHttpUrl("/api/today"), {
+          cache: "no-store",
+        });
         if (!response.ok) throw new Error(`today payload ${response.status}`);
         const data = (await response.json()) as TodayPayload;
         if (cancelled) return;
