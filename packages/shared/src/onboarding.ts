@@ -65,6 +65,8 @@ export interface RosterEntry {
   readonly role: string;
   readonly topics: ReadonlyArray<string>;
   readonly keywords: ReadonlyArray<string>;
+  /** Optional environment binding; absent = This Mac. See employees/roster.ts. */
+  readonly host?: string;
 }
 
 export interface AssembledOnboarding {

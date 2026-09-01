@@ -18,6 +18,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { getLocalStorageItem } from "../../hooks/useLocalStorage";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { SetupGate } from "../setup/SetupGate";
+import { MelaniEmployeeOfflineNotice } from "./MelaniEmployeeOfflineNotice";
 import { MelaniSidebar } from "./MelaniSidebar";
 import { useRosterState } from "./useRosterState";
 
@@ -125,6 +126,10 @@ export function MelaniShell({ children }: { readonly children: ReactNode }) {
         )}
       </div>
       <div className="melani-shell__stage" data-testid="melani-stage">
+        {/* Overlay: catches a click on a remote-hosted employee whose server is
+            offline and shows a reconnect notice, above the stage content but
+            clear of the ChatHeader/DraftHero area. */}
+        <MelaniEmployeeOfflineNotice />
         {children}
       </div>
       {/* Mounts the first-run wizard when the instance is unset up; renders

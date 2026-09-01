@@ -209,10 +209,11 @@ function SectionBlock({
 export function TodayPanel({
   onOpenItem,
 }: {
-  /** Open a new conversation pre-filled with this briefing. Returns an outcome
+  /** Open a new conversation pre-filled with this briefing, against the owning
+   *  employee's host environment (undefined = This Mac). Returns an outcome
    *  describing why it could not open (or null on success). Injected because
    *  thread-opening needs router context the panel must not depend on. */
-  onOpenItem?: (briefing: string) => void | Promise<PanelOpenOutcome>;
+  onOpenItem?: (host: string | undefined, briefing: string) => void | Promise<PanelOpenOutcome>;
 } = {}) {
   const [payload, setPayload] = useState<TodayPayload | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -269,7 +270,10 @@ export function TodayPanel({
       // The opener self-provisions a workspace when none exists, so this only
       // returns a reason on a genuine failure (server unreachable). Surface it
       // instead of dropping it — but the common path is a thread opening.
-      const outcome = await onOpenItem(buildItemBriefing(employee, item.text, item.action));
+      const outcome = await onOpenItem(
+        employee.host,
+        buildItemBriefing(employee, item.text, item.action),
+      );
       setNotice(outcome ?? null);
       return;
     }

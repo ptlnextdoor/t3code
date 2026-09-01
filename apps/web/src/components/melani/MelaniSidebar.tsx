@@ -17,15 +17,19 @@
  * room for them without reshaping.
  */
 import * as Schema from "effect/Schema";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { openCommandPalette } from "../../commandPaletteBus";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { useEnvironments } from "../../state/environments";
 import type { EmployeeSummary } from "../employees/summarize";
 import { useEmployeeConversation } from "../employees/useEmployeeConversation";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
 import { startNewThreadFromContext } from "../../lib/chatThreadActions";
 import { MelaniAvatar } from "./MelaniAvatar";
+import { NewEmployeeDialog } from "./NewEmployeeDialog";
+import { showEmployeeOffline } from "./employeeOfflineBus";
+import { buildHostLabelResolver } from "./hostLabel";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { rowPreview, rowStatus, rowTrailing } from "./rowModel";
 import { buildSections, type MelaniSection } from "./sections";
@@ -39,11 +43,14 @@ function EmployeeRow({
   summary,
   collapsed,
   selected,
+  hostLabel,
   onOpen,
 }: {
   readonly summary: EmployeeSummary;
   readonly collapsed: boolean;
   readonly selected: boolean;
+  /** Human name of the employee's remote host, or null when it runs on This Mac. */
+  readonly hostLabel: string | null;
   readonly onOpen: (summary: EmployeeSummary) => void;
 }) {
   const { employee } = summary;
@@ -58,14 +65,32 @@ function EmployeeRow({
       data-status={status}
       data-selected={selected ? "" : undefined}
       data-testid="melani-employee-row"
-      aria-label={`${employee.name}. ${preview}`}
+      aria-label={`${employee.name}. ${preview}${hostLabel ? `. Runs on ${hostLabel}` : ""}`}
       onClick={() => onOpen(summary)}
     >
       <MelaniAvatar id={employee.id} name={employee.name} status={status} />
       {collapsed ? null : (
         <>
           <span className="melani-row__body">
-            <span className="melani-row__name">{employee.name}</span>
+            <span className="melani-row__name">
+              {employee.name}
+              {hostLabel ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span
+                        className="melani-row__host"
+                        data-testid="melani-row-host"
+                        aria-hidden="true"
+                      />
+                    }
+                  >
+                    ☁
+                  </TooltipTrigger>
+                  <TooltipPopup side="top">Runs on {hostLabel}</TooltipPopup>
+                </Tooltip>
+              ) : null}
+            </span>
             <span className="melani-row__preview">{preview}</span>
           </span>
           {trailing ? <span className="melani-row__trailing">{trailing}</span> : null}
@@ -79,12 +104,15 @@ function Section({
   section,
   collapsed,
   isCollapsed,
+  hostLabelFor,
   onToggle,
   onOpen,
 }: {
   readonly section: MelaniSection;
   readonly collapsed: boolean;
   readonly isCollapsed: boolean;
+  /** Resolve an employee's host string to a human label, or null for This Mac. */
+  readonly hostLabelFor: (host: string | undefined) => string | null;
   readonly onToggle: (id: string) => void;
   readonly onOpen: (summary: EmployeeSummary) => void;
 }) {
@@ -116,6 +144,7 @@ function Section({
               summary={summary}
               collapsed={collapsed}
               selected={false}
+              hostLabel={hostLabelFor(summary.employee.host)}
               onOpen={onOpen}
             />
           ))}
@@ -137,6 +166,21 @@ export function MelaniSidebar({
   const openConversation = useEmployeeConversation();
   const { activeDraftThread, activeThread, defaultProjectRef, handleNewThread } =
     useHandleNewThread();
+  const { environments } = useEnvironments();
+  const [hiring, setHiring] = useState(false);
+
+  // Resolve an employee's host to a friendly label for the row indicator and the
+  // host picker. Rebuilt only when the known environments change.
+  const primaryEnvironmentId =
+    environments.find((environment) => environment.entry.target._tag === "PrimaryConnectionTarget")
+      ?.environmentId ?? null;
+  const hostLabelFor = buildHostLabelResolver({
+    primaryEnvironmentId,
+    environments: environments.map((environment) => ({
+      environmentId: environment.environmentId,
+      label: environment.label,
+    })),
+  });
 
   // Collapse state is durable + client-scoped via localStorage, per UI-SPEC
   // §1.5's "host-durable" rule adapted to our persistence layer.
@@ -163,8 +207,19 @@ export function MelaniSidebar({
   }, [activeDraftThread, activeThread, defaultProjectRef, handleNewThread]);
 
   const onOpen = useCallback(
-    (summary: EmployeeSummary) => {
-      void openConversation(summary);
+    async (summary: EmployeeSummary) => {
+      const outcome = await openConversation(summary);
+      // A remote host that is not connected is the one recoverable failure: hand
+      // it to the stage overlay, which names the environment and offers a
+      // reconnect. Every other outcome is either success (null) or a plain
+      // failure the shared open path already toasts.
+      if (outcome?.offline) {
+        showEmployeeOffline({
+          environmentId: outcome.offline.environmentId,
+          environmentLabel: outcome.offline.environmentLabel,
+          employeeName: summary.employee.name,
+        });
+      }
     },
     [openConversation],
   );
@@ -201,6 +256,22 @@ export function MelaniSidebar({
               <span className="melani-newbtn__plus">+</span>
               New
             </button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    className="melani-iconbtn"
+                    aria-label="Hire a new employee"
+                    data-testid="melani-hire"
+                    onClick={() => setHiring(true)}
+                  />
+                }
+              >
+                ⊕
+              </TooltipTrigger>
+              <TooltipPopup side="bottom">New employee</TooltipPopup>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -256,10 +327,17 @@ export function MelaniSidebar({
           sections={sections}
           collapsed={collapsed}
           collapsedSections={collapsedSections}
+          hostLabelFor={hostLabelFor}
           onToggleSection={toggleSection}
           onOpen={onOpen}
         />
       </div>
+
+      <NewEmployeeDialog
+        open={hiring}
+        onOpenChange={setHiring}
+        existingIds={roster.summaries.map((summary) => summary.employee.id)}
+      />
     </nav>
   );
 }
@@ -270,6 +348,7 @@ function RosterBody({
   sections,
   collapsed,
   collapsedSections,
+  hostLabelFor,
   onToggleSection,
   onOpen,
 }: {
@@ -277,6 +356,7 @@ function RosterBody({
   readonly sections: ReadonlyArray<MelaniSection>;
   readonly collapsed: boolean;
   readonly collapsedSections: ReadonlyArray<string>;
+  readonly hostLabelFor: (host: string | undefined) => string | null;
   readonly onToggleSection: (id: string) => void;
   readonly onOpen: (summary: EmployeeSummary) => void;
 }) {
@@ -336,6 +416,7 @@ function RosterBody({
           section={section}
           collapsed={collapsed}
           isCollapsed={collapsedSections.includes(section.id)}
+          hostLabelFor={hostLabelFor}
           onToggle={onToggleSection}
           onOpen={onOpen}
         />
