@@ -2351,7 +2351,7 @@ select.melani-hire__input {
   gap: 2px;
   padding: 12px 8px;
   border-right: 1px solid var(--sand-stroke-secondary);
-  background: var(--sand-base);
+  background: var(--sand-editor);
 }
 
 .melani-settings-nav__title {
@@ -2614,7 +2614,7 @@ select.melani-hire__input {
   min-width: 0;
   padding: 4px 8px;
   border-radius: var(--sand-radius-sm, 6px);
-  background: var(--sand-base);
+  background: var(--sand-editor);
   border: 1px solid var(--sand-stroke-tertiary);
   font-size: 11px;
   color: var(--sand-text-primary);
@@ -2703,7 +2703,7 @@ select.melani-hire__input {
   padding: 0 10px;
   border: 1px solid var(--sand-stroke-secondary);
   border-radius: var(--sand-radius-sm, 6px);
-  background: var(--sand-base);
+  background: var(--sand-editor);
   color: var(--sand-text-primary);
   font-size: 13px;
 }
