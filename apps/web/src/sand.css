@@ -2285,3 +2285,532 @@ select.melani-hire__input {
     transition: none;
   }
 }
+
+/* --- settings overlay (N3.11) ----------------------------------------- */
+
+/* Floats over the whole shell as a dialog; the people-list stays mounted
+   behind it (UI-SPEC overlay pattern). */
+.melani-settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.melani-settings-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--sand-shadow-scrim, #000) 46%, transparent);
+  /* Backdrop settle, UI-SPEC §4: 180ms house ease. */
+  animation: melani-settings-backdrop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.melani-settings-dialog {
+  position: relative;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  width: min(920px, 100%);
+  height: min(640px, 100%);
+  min-height: 0;
+  background: var(--sand-chrome);
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-dialog, 14px);
+  overflow: hidden;
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--sand-shadow-scrim, #000) 40%, transparent);
+  /* Panel enter, UI-SPEC §4: 180ms house ease (card/menu pop). */
+  animation: melani-settings-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes melani-settings-backdrop {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes melani-settings-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-settings-overlay__backdrop,
+  .melani-settings-dialog {
+    animation: none;
+  }
+}
+
+/* Left column: the section list. */
+.melani-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--sand-stroke-secondary);
+  background: var(--sand-base);
+}
+
+.melani-settings-nav__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sand-text-secondary);
+}
+
+.melani-settings-nav__item {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--sand-radius-row, 8px);
+  background: transparent;
+  color: var(--sand-text-secondary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  /* Micro-hover, UI-SPEC §4: 120ms. */
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-settings-nav__item:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+}
+
+.melani-settings-nav__item[data-active] {
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-primary);
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-settings-nav__item {
+    transition: none;
+  }
+}
+
+/* Right pane: the active section. */
+.melani-settings-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.melani-settings-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--sand-stroke-secondary);
+}
+
+.melani-settings-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+}
+
+.melani-settings-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--sand-radius-full);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-settings-panel__close:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+}
+
+.melani-settings-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.melani-settings-embed {
+  margin: -16px;
+}
+
+.melani-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.melani-settings-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sand-text-tertiary);
+}
+
+.melani-settings-lead a {
+  color: var(--sand-accent);
+}
+
+.melani-settings-empty {
+  padding: 24px;
+  border: 1px dashed var(--sand-stroke-tertiary);
+  border-radius: var(--sand-radius-lg, 12px);
+  color: var(--sand-text-tertiary);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Providers: one machine block, its cards. */
+.melani-provider-machine {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.melani-provider-machine__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.melani-provider-machine__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+}
+
+.melani-provider-machine__refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-full);
+  background: transparent;
+  color: var(--sand-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-provider-machine__refresh:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+}
+
+.melani-provider-machine__refresh[data-refreshing] svg {
+  animation: sand-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-provider-machine__refresh svg {
+    animation: none;
+  }
+}
+
+.melani-provider-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.melani-provider-card {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-lg, 12px);
+  background: var(--sand-fill-quaternary);
+}
+
+.melani-provider-card__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.melani-provider-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.melani-provider-card__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+}
+
+.melani-provider-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--sand-text-secondary);
+}
+
+.melani-provider-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-text-quaternary);
+}
+
+.melani-provider-card__dot[data-tone="success"] {
+  background: var(--sand-green);
+}
+
+.melani-provider-card__dot[data-tone="warning"] {
+  background: var(--sand-yellow);
+}
+
+.melani-provider-card__dot[data-tone="danger"] {
+  background: var(--sand-red);
+}
+
+.melani-provider-card__dot[data-tone="muted"] {
+  background: var(--sand-text-quaternary);
+}
+
+.melani-provider-card__detail {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--sand-text-tertiary);
+}
+
+.melani-provider-card__command {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.melani-provider-card__command code {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: var(--sand-radius-sm, 6px);
+  background: var(--sand-base);
+  border: 1px solid var(--sand-stroke-tertiary);
+  font-size: 11px;
+  color: var(--sand-text-primary);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.melani-provider-card__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-sm, 6px);
+  background: transparent;
+  color: var(--sand-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-provider-card__copy:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-provider-card__copy {
+    transition: none;
+  }
+}
+
+/* Team: roster rows. */
+.melani-team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.melani-team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--sand-radius-row, 8px);
+  transition: background 0.12s ease;
+}
+
+.melani-team-row:hover {
+  background: var(--sand-fill-tertiary);
+}
+
+.melani-team-row__body,
+.melani-team-row__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.melani-team-row__edit {
+  gap: 6px;
+}
+
+.melani-team-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sand-text-primary);
+}
+
+.melani-team-row__role {
+  font-size: 12px;
+  color: var(--sand-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.melani-team-row__input {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--sand-stroke-secondary);
+  border-radius: var(--sand-radius-sm, 6px);
+  background: var(--sand-base);
+  color: var(--sand-text-primary);
+  font-size: 13px;
+}
+
+.melani-team-row__input--role {
+  font-size: 12px;
+}
+
+.melani-team-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.melani-team-row__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  min-width: 28px;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--sand-radius-sm, 6px);
+  background: transparent;
+  color: var(--sand-text-tertiary);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.melani-team-row__btn:hover:not(:disabled) {
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-primary);
+}
+
+.melani-team-row__btn--danger:hover:not(:disabled) {
+  color: var(--sand-red);
+}
+
+.melani-team-row__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-team-row,
+  .melani-team-row__btn {
+    transition: none;
+  }
+}
+
+/* About. */
+.melani-about {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.melani-about__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--sand-radius-lg, 12px);
+  background: color-mix(in srgb, var(--sand-accent) 22%, transparent);
+  color: var(--sand-accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.melani-about__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.melani-about__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sand-text-primary);
+}
+
+.melani-about__tagline {
+  font-size: 13px;
+  color: var(--sand-text-tertiary);
+}
+
+.melani-about__version {
+  font-size: 12px;
+  color: var(--sand-text-quaternary);
+}
+
+/* Sidebar footer + gear. */
+.melani-sidebar__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+  margin-top: auto;
+  border-top: 1px solid var(--sand-stroke-secondary);
+}
+
+.melani-sidebar[data-collapsed] .melani-sidebar__footer {
+  justify-content: center;
+}

@@ -2,10 +2,16 @@
 /**
  * HIRE route: append one employee to the instance's roster.json (N3.9).
  *
- *   POST /api/roster/employee  { id, name, role, keywords?, topics?, host? }
+ *   POST   /api/roster/employee  { id, name, role, keywords?, topics?, host? }
  *     -> validate, append to the existing roster (or start a fresh one when no
  *        file exists yet), atomically write, and return the full roster so the
  *        client can render the new hire immediately.
+ *   PATCH  /api/roster/employee  { id, name?, role?, host? }
+ *     -> edit an existing employee in place (name / role / host binding), same
+ *        atomic write, returns the full roster. Team-management edit half.
+ *   DELETE /api/roster/employee  { id }
+ *     -> remove one employee by id, same atomic write, returns the full roster.
+ *        The remove half of the Team settings section.
  *
  * This is the write half of the "I can create my own bot" acceptance loop. It
  * OWNS the file the same way OnboardRoute/commit does: same env-overridable
@@ -138,6 +144,50 @@ export function validateEmployeePayload(
 }
 
 /**
+ * Validate an EDIT payload: an id plus at least one changed field
+ * (name / role / host). Returns a partial patch to apply, or a human reason.
+ * Pure + exported so the Team-settings edit guard is provable without a server.
+ */
+export function validateEmployeeEditPayload(
+  raw: unknown,
+):
+  | { ok: true; id: string; patch: { name?: string; role?: string; host?: string | null } }
+  | { ok: false; detail: string } {
+  if (typeof raw !== "object" || raw === null) {
+    return { ok: false, detail: "Expected an employee object." };
+  }
+  const e = raw as Record<string, unknown>;
+  const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+  const id = str(e.id);
+  if (id.length === 0) return { ok: false, detail: "An employee needs an id." };
+  const patch: { name?: string; role?: string; host?: string | null } = {};
+  if (e.name !== undefined) {
+    const name = str(e.name);
+    if (name.length === 0) return { ok: false, detail: "Give your employee a name." };
+    if (name.length > MAX_FIELD_CHARS) return { ok: false, detail: "That name is too long." };
+    patch.name = name;
+  }
+  if (e.role !== undefined) {
+    const role = str(e.role);
+    if (role.length === 0) return { ok: false, detail: "Say in one line what they own." };
+    if (role.length > MAX_FIELD_CHARS) return { ok: false, detail: "That role is too long." };
+    patch.role = role;
+  }
+  if (e.host !== undefined) {
+    if (e.host !== null && typeof e.host !== "string") {
+      return { ok: false, detail: "Host must be an environment id." };
+    }
+    const host = str(e.host);
+    // Blank / "local" clears the binding back to This Mac (null); a real id binds.
+    patch.host = host.length > 0 && host !== "local" ? host : null;
+  }
+  if (patch.name === undefined && patch.role === undefined && patch.host === undefined) {
+    return { ok: false, detail: "Nothing to change." };
+  }
+  return { ok: true, id, patch };
+}
+
+/**
  * POST /api/roster/employee — append one employee. The whole decision (read,
  * dup-check, append, write) runs inside a single Effect.sync returning a
  * discriminated outcome, so a disk failure or a corrupt existing file becomes a
@@ -195,6 +245,141 @@ export const rosterEmployeeRouteLayer = HttpRouter.add(
     return HttpServerResponse.jsonUnsafe({
       ok: true,
       employee: entry,
+      roster: outcome.roster,
+      rosterPath: ROSTER_JSON_PATH,
+    });
+  }),
+);
+
+/**
+ * PATCH /api/roster/employee — edit one employee in place. Reads, applies the
+ * validated partial patch to the matching id, atomically writes, returns the
+ * full roster. A missing id is a 404; the same fail-closed value shape as POST.
+ */
+export const rosterEmployeeEditRouteLayer = HttpRouter.add(
+  "PATCH",
+  "/api/roster/employee",
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const body = yield* Effect.orElseSucceed(request.json, () => ({}) as unknown);
+    const validation = validateEmployeeEditPayload(body);
+    if (!validation.ok) {
+      return HttpServerResponse.jsonUnsafe(
+        { ok: false, detail: validation.detail },
+        { status: 400 },
+      );
+    }
+    const { id, patch } = validation;
+
+    const outcome = yield* Effect.sync(
+      ():
+        | { kind: "ok"; roster: ReadonlyArray<RosterEntry> }
+        | { kind: "missing" }
+        | { kind: "error" } => {
+        try {
+          const roster = readExistingRoster();
+          const index = roster.findIndex((existing) => existing.id === id);
+          if (index === -1) return { kind: "missing" };
+          const current = roster[index]!;
+          // host is a special three-way: undefined = leave as-is; null = clear
+          // to This Mac (drop the key); string = bind. Rebuild the whole entry
+          // so a cleared host does not linger and no readonly field is mutated.
+          const resolvedHost =
+            patch.host === undefined ? current.host : patch.host === null ? undefined : patch.host;
+          const next: RosterEntry = {
+            ...current,
+            ...(patch.name !== undefined ? { name: patch.name } : {}),
+            ...(patch.role !== undefined ? { role: patch.role } : {}),
+            ...(resolvedHost !== undefined ? { host: resolvedHost } : {}),
+          };
+          if (resolvedHost === undefined) {
+            delete (next as { host?: string }).host;
+          }
+          const nextRoster = [...roster.slice(0, index), next, ...roster.slice(index + 1)];
+          writeAtomic(ROSTER_JSON_PATH, `${JSON.stringify(nextRoster, null, 2)}\n`);
+          return { kind: "ok", roster: nextRoster };
+        } catch {
+          return { kind: "error" };
+        }
+      },
+    );
+
+    if (outcome.kind === "missing") {
+      return HttpServerResponse.jsonUnsafe(
+        { ok: false, detail: `No employee with id "${id}".` },
+        { status: 404 },
+      );
+    }
+    if (outcome.kind === "error") {
+      return HttpServerResponse.jsonUnsafe(
+        {
+          ok: false,
+          detail: "Couldn't save your changes. Check the server's disk and roster file.",
+        },
+        { status: 500 },
+      );
+    }
+    return HttpServerResponse.jsonUnsafe({
+      ok: true,
+      roster: outcome.roster,
+      rosterPath: ROSTER_JSON_PATH,
+    });
+  }),
+);
+
+/**
+ * DELETE /api/roster/employee — remove one employee by id. Reads, filters,
+ * atomically writes, returns the remaining roster. A missing id is a 404.
+ */
+export const rosterEmployeeDeleteRouteLayer = HttpRouter.add(
+  "DELETE",
+  "/api/roster/employee",
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const body = yield* Effect.orElseSucceed(request.json, () => ({}) as unknown);
+    const id =
+      typeof (body as { id?: unknown })?.id === "string" ? (body as { id: string }).id.trim() : "";
+    if (id.length === 0) {
+      return HttpServerResponse.jsonUnsafe(
+        { ok: false, detail: "An employee needs an id." },
+        { status: 400 },
+      );
+    }
+
+    const outcome = yield* Effect.sync(
+      ():
+        | { kind: "ok"; roster: ReadonlyArray<RosterEntry> }
+        | { kind: "missing" }
+        | { kind: "error" } => {
+        try {
+          const roster = readExistingRoster();
+          if (!roster.some((existing) => existing.id === id)) return { kind: "missing" };
+          const next = roster.filter((existing) => existing.id !== id);
+          writeAtomic(ROSTER_JSON_PATH, `${JSON.stringify(next, null, 2)}\n`);
+          return { kind: "ok", roster: next };
+        } catch {
+          return { kind: "error" };
+        }
+      },
+    );
+
+    if (outcome.kind === "missing") {
+      return HttpServerResponse.jsonUnsafe(
+        { ok: false, detail: `No employee with id "${id}".` },
+        { status: 404 },
+      );
+    }
+    if (outcome.kind === "error") {
+      return HttpServerResponse.jsonUnsafe(
+        {
+          ok: false,
+          detail: "Couldn't remove your employee. Check the server's disk and roster file.",
+        },
+        { status: 500 },
+      );
+    }
+    return HttpServerResponse.jsonUnsafe({
+      ok: true,
       roster: outcome.roster,
       rosterPath: ROSTER_JSON_PATH,
     });

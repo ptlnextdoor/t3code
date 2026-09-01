@@ -349,6 +349,76 @@ async function main() {
       );
     }
 
+    // -- 6. Settings overlay: gear -> Providers + Machines --------------
+    console.log("\n== opening settings via the sidebar gear ==");
+    // The gear lives in the sidebar footer and opens a shell-level overlay that
+    // floats over the people-list (which stays mounted behind it).
+    const hasGear = await evalJs(
+      cdp,
+      `!!document.querySelector('[data-testid="melani-settings-gear"]')`,
+    );
+    assert(hasGear, "sidebar footer shows the settings gear");
+    await evalJs(cdp, `document.querySelector('[data-testid="melani-settings-gear"]').click()`);
+    let overlay = { open: false, shellBehind: false };
+    for (let i = 0; i < 20; i++) {
+      await sleep(200);
+      overlay = await evalJs(
+        cdp,
+        `(() => ({
+          open: !!document.querySelector('[data-testid="melani-settings-overlay"]'),
+          shellBehind: !!document.querySelector('[data-testid="melani-shell"]'),
+          providers: !!document.querySelector('[data-testid="melani-providers-section"]'),
+        }))()`,
+      );
+      if (overlay.open) break;
+    }
+    assert(overlay.open, "gear opens the settings overlay dialog");
+    assert(overlay.shellBehind, "the shell stays mounted BEHIND the overlay (not a route change)");
+
+    // Providers is the default section: assert provider cards render.
+    let providers = await evalJs(
+      cdp,
+      `(() => ({
+        section: !!document.querySelector('[data-testid="melani-providers-section"]'),
+        machines: document.querySelectorAll('[data-testid="melani-provider-machine"]').length,
+        cards: document.querySelectorAll('[data-testid="melani-provider-card"]').length,
+      }))()`,
+    );
+    assert(providers.section, "Providers section renders by default");
+    assert(providers.cards >= 1, `Providers shows provider cards (${providers.cards} cards)`);
+    await screenshot(cdp, "settings-providers");
+
+    // Switch to Machines: assert the environment list (the working Add-env flow)
+    // renders inside the overlay.
+    await evalJs(
+      cdp,
+      `document.querySelector('[data-testid="melani-settings-nav-machines"]').click()`,
+    );
+    let machines = { section: false };
+    for (let i = 0; i < 20; i++) {
+      await sleep(200);
+      machines = await evalJs(
+        cdp,
+        `(() => ({
+          section: !!document.querySelector('[data-testid="melani-machines-section"]'),
+          addEnv: /add environment/i.test(document.querySelector('[data-testid="melani-settings-dialog"]')?.textContent || ''),
+        }))()`,
+      );
+      if (machines.section) break;
+    }
+    assert(machines.section, "Machines section renders the environment list");
+    assert(machines.addEnv, 'Machines exposes the working "Add environment" flow');
+    await screenshot(cdp, "settings-machines");
+
+    // Escape closes the overlay, shell still present.
+    await evalJs(cdp, `document.querySelector('[data-testid="melani-settings-close"]').click()`);
+    await sleep(300);
+    const closed = await evalJs(
+      cdp,
+      `!document.querySelector('[data-testid="melani-settings-overlay"]')`,
+    );
+    assert(closed, "closing the overlay returns to the shell");
+
     proc.kill();
   } catch (e) {
     proc.kill();

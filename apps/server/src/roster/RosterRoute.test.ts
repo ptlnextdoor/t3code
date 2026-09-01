@@ -15,7 +15,7 @@ import * as NodePath from "node:path";
 
 import { assert, describe, it } from "@effect/vitest";
 
-import { validateEmployeePayload } from "./RosterRoute.ts";
+import { validateEmployeePayload, validateEmployeeEditPayload } from "./RosterRoute.ts";
 
 describe("roster hire route — payload guard", () => {
   it("accepts a well-formed hire and defaults topics to [id]", () => {
@@ -55,6 +55,99 @@ describe("roster hire route — payload guard", () => {
     assert.isFalse(validateEmployeePayload({ id: "x", name: "", role: "r" }).ok);
     assert.isFalse(validateEmployeePayload({ id: "x", name: "N", role: "" }).ok);
     assert.isFalse(validateEmployeePayload("nope").ok);
+  });
+});
+
+describe("roster edit route — patch guard", () => {
+  it("accepts a name/role change and returns only the changed fields", () => {
+    const out = validateEmployeeEditPayload({ id: "sales", name: "  Sales Pro ", role: "Closes." });
+    assert.isTrue(out.ok);
+    if (out.ok) {
+      assert.strictEqual(out.id, "sales");
+      assert.deepStrictEqual(out.patch, { name: "Sales Pro", role: "Closes." });
+    }
+  });
+
+  it("binds a real host and clears blank / 'local' to null", () => {
+    const bind = validateEmployeeEditPayload({ id: "a", host: "env-box" });
+    assert.isTrue(bind.ok && bind.patch.host === "env-box");
+    for (const host of ["", "  ", "local"]) {
+      const clear = validateEmployeeEditPayload({ id: "a", host });
+      assert.isTrue(clear.ok);
+      if (clear.ok) assert.strictEqual(clear.patch.host, null);
+    }
+  });
+
+  it("rejects a missing id, an empty name/role, and a no-op patch", () => {
+    assert.isFalse(validateEmployeeEditPayload({ name: "N" }).ok);
+    assert.isFalse(validateEmployeeEditPayload({ id: "a", name: "" }).ok);
+    assert.isFalse(validateEmployeeEditPayload({ id: "a", role: "  " }).ok);
+    assert.isFalse(validateEmployeeEditPayload({ id: "a" }).ok);
+    assert.isFalse(validateEmployeeEditPayload("nope").ok);
+  });
+});
+
+describe("roster edit route — apply + remove", () => {
+  // Re-implements the PATCH/DELETE decisions against a temp file so the file
+  // effect is provable without a server. NEVER the real roster.json.
+  type Entry = { id: string; name: string; role: string; host?: string };
+  function seed(filePath: string, roster: Entry[]): void {
+    NodeFS.writeFileSync(filePath, `${JSON.stringify(roster, null, 2)}\n`, "utf8");
+  }
+  function read(filePath: string): Entry[] {
+    return JSON.parse(NodeFS.readFileSync(filePath, "utf8"));
+  }
+
+  it("patches name/role in place and clears host, leaving others untouched", () => {
+    const dir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "n311-roster-"));
+    const file = NodePath.join(dir, "roster.json");
+    try {
+      seed(file, [
+        { id: "a", name: "A", role: "r", host: "env-box" },
+        { id: "b", name: "B", role: "r" },
+      ]);
+      const validation = validateEmployeeEditPayload({ id: "a", name: "Ada", host: "local" });
+      assert.isTrue(validation.ok);
+      if (!validation.ok) return;
+      const roster = read(file);
+      const index = roster.findIndex((e) => e.id === validation.id);
+      const current = roster[index]!;
+      const next: Entry = {
+        ...current,
+        ...(validation.patch.name !== undefined ? { name: validation.patch.name } : {}),
+      };
+      if (validation.patch.host === null) delete next.host;
+      const nextRoster = [...roster.slice(0, index), next, ...roster.slice(index + 1)];
+      seed(file, nextRoster);
+
+      const onDisk = read(file);
+      assert.strictEqual(onDisk[0]!.name, "Ada");
+      assert.notProperty(onDisk[0]!, "host");
+      assert.deepStrictEqual(onDisk[1], { id: "b", name: "B", role: "r" });
+    } finally {
+      NodeFS.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("removes one employee by id and preserves the rest", () => {
+    const dir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "n311-roster-"));
+    const file = NodePath.join(dir, "roster.json");
+    try {
+      seed(file, [
+        { id: "a", name: "A", role: "r" },
+        { id: "b", name: "B", role: "r" },
+        { id: "c", name: "C", role: "r" },
+      ]);
+      const roster = read(file);
+      const next = roster.filter((e) => e.id !== "b");
+      seed(file, next);
+      assert.deepStrictEqual(
+        read(file).map((e) => e.id),
+        ["a", "c"],
+      );
+    } finally {
+      NodeFS.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
