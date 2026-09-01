@@ -28,6 +28,10 @@ import { buildBriefing } from "./briefing";
 import { createEnsureWorkspaceProject, type EnsureCreateInput } from "./ensureWorkspaceProject";
 import type { PanelOpenOutcome } from "./panelOutcome";
 import type { EmployeeSummary } from "./summarize";
+import {
+  recordEmployeeConversation,
+  type EmployeeIdentity,
+} from "../melani/employeeConversationLink";
 
 /**
  * A stable ensure-workspace-project function that self-provisions once and
@@ -85,18 +89,28 @@ function useEnsureProjectRef() {
  */
 export function useOpenBriefingConversation(): (
   briefing: string,
+  identity?: EmployeeIdentity,
 ) => Promise<PanelOpenOutcome> {
   const { handleNewThread } = useHandleNewThread();
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
   const ensureProjectRef = useEnsureProjectRef();
 
   return useCallback(
-    async (briefing: string): Promise<PanelOpenOutcome> => {
+    async (briefing: string, identity?: EmployeeIdentity): Promise<PanelOpenOutcome> => {
       const projectRef = await ensureProjectRef();
       if (!projectRef) return { reason: "Could not reach the server. Try again in a moment." };
       const opened = await handleNewThread(projectRef);
       if (!opened?.draftId) return { reason: "Could not open a conversation." };
       setPrompt(opened.draftId, briefing);
+      // The one place both the employee's identity and the conversation's ids
+      // are in hand: record the join so the stage can render a person-shaped
+      // header + empty state (UI-SPEC §6 N3.1) instead of project/git chrome.
+      if (identity) {
+        recordEmployeeConversation(
+          { draftId: opened.draftId, threadId: opened.threadId },
+          identity,
+        );
+      }
       return null;
     },
     [ensureProjectRef, handleNewThread, setPrompt],
@@ -108,12 +122,15 @@ export function useOpenBriefingConversation(): (
  * conversation with the employee, pre-filling its briefing. Resolves to `null`
  * on success, or a `PanelOpenOutcome` describing the genuine failure.
  */
-export function useEmployeeConversation(): (
-  summary: EmployeeSummary,
-) => Promise<PanelOpenOutcome> {
+export function useEmployeeConversation(): (summary: EmployeeSummary) => Promise<PanelOpenOutcome> {
   const openBriefing = useOpenBriefingConversation();
   return useCallback(
-    (summary: EmployeeSummary) => openBriefing(buildBriefing(summary)),
+    (summary: EmployeeSummary) =>
+      openBriefing(buildBriefing(summary), {
+        id: summary.employee.id,
+        name: summary.employee.name,
+        role: summary.employee.role,
+      }),
     [openBriefing],
   );
 }
