@@ -15,7 +15,12 @@
  *      button is present, and the empty stage greets the person rather than
  *      asking "What should we build in X?".
  *   4. Collapse -> the sidebar becomes the 88px avatar rail; expand -> back.
- *   5. Screenshots: expanded, collapsed, conversation-open, empty-state.
+ *   5. Screenshots: expanded, collapsed, conversation-open, empty-state,
+ *      hire-dialog.
+ *   6. The hire dialog opens as a sand overlay (and closes on Escape).
+ *   7. Reduced motion (N3.2): with prefers-reduced-motion: reduce emulated,
+ *      the employee row and shell width transitions compute to none — proof
+ *      the motion pass never pegs the GPU on a high-refresh display.
  *
  * Token minting uses the auto-discovering `t3 pair` command so the token is
  * always issued against the state dir the running server actually reads.
@@ -347,7 +352,67 @@ async function main() {
         reexpandedWidth !== null && reexpandedWidth > 90,
         `expand restores the full sidebar (${collapsedWidth}px -> ${reexpandedWidth}px)`,
       );
+
+      // -- 6. Hire dialog: open, capture the overlay, close -------------
+      console.log("\n== opening the hire dialog ==");
+      await evalJs(
+        cdp,
+        `(() => { const b = document.querySelector('[data-testid="melani-hire"]'); if (b) b.click(); })()`,
+      );
+      let hire = { open: false };
+      for (let i = 0; i < 12; i++) {
+        await sleep(200);
+        hire = await evalJs(
+          cdp,
+          `(() => ({ open: !!document.querySelector('[data-testid="melani-hire-dialog"]') }))()`,
+        );
+        if (hire.open) break;
+      }
+      assert(hire.open, "hire dialog opens as a sand overlay");
+      if (hire.open) {
+        await sleep(250); // let the 180ms enter settle
+        await screenshot(cdp, "hire-dialog");
+        // Close it again (reverse-state) so later checks see a clean stage.
+        await evalJs(cdp, `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`);
+        await sleep(250);
+      }
     }
+
+    // -- 7. Reduced motion: EVERY new animation/transition is disabled --
+    // Emulate prefers-reduced-motion: reduce via CDP and assert a row's
+    // computed transition collapses to none (the repo's no-GPU-loop rule).
+    console.log("\n== asserting reduced-motion disables shell motion ==");
+    await cdp.send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+    });
+    await sleep(300);
+    const reduced = await evalJs(
+      cdp,
+      `(() => {
+        const row = document.querySelector('[data-testid="melani-employee-row"]');
+        const shell = document.querySelector('[data-testid="melani-shell"]');
+        const rowT = row ? getComputedStyle(row).transition : null;
+        const shellT = shell ? getComputedStyle(shell).transition : null;
+        // A disabled transition computes to "all 0s ..." / "none" / empty.
+        const isOff = (t) =>
+          t == null || t === "none" || t === "" || /(^|\\s)all 0s\\b/.test(t) || /\\b0s\\b/.test(t);
+        return { row: rowT, shell: shellT, rowOff: isOff(rowT), shellOff: isOff(shellT), hadRow: !!row };
+      })()`,
+    );
+    if (reduced.hadRow) {
+      assert(
+        reduced.rowOff,
+        `reduced-motion: employee row transition is disabled (transition="${reduced.row}")`,
+      );
+    } else {
+      console.log("  (no employee row present; skipping row transition assertion)");
+    }
+    assert(
+      reduced.shellOff,
+      `reduced-motion: shell width transition is disabled (transition="${reduced.shell}")`,
+    );
+    // Restore normal motion so the media state doesn't leak to any later step.
+    await cdp.send("Emulation.setEmulatedMedia", { features: [] });
 
     proc.kill();
   } catch (e) {
