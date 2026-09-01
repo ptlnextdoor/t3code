@@ -1511,7 +1511,8 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 42px;
+  /* UI-SPEC §4: sidebar header is 50px tall in the reference. */
+  min-height: 50px;
   padding-top: 2px;
 }
 
@@ -1710,7 +1711,8 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
 }
 
 .melani-sidebar[data-collapsed] .melani-row {
-  grid-template-columns: 1fr;
+  grid-template-columns: 34px;
+  justify-content: center;
   justify-items: center;
   padding: 8px 0;
   min-height: 52px;
@@ -2316,5 +2318,206 @@ select.melani-hire__input {
   .melani-chat-header__badge,
   .melani-shell__stage [data-chat-composer-footer="true"] > div:first-child {
     transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* --- N3.2 motion --- (additive; safe to merge alongside other blocks)   */
+/* The feel pass over the Melani shell. Every value here is a fact about   */
+/* the grok reference's motion (UI-SPEC §4): 120ms ease micro-hovers,     */
+/* 160ms cubic-bezier(.16,1,.3,1) for things that pop in, 240ms           */
+/* cubic-bezier(.22,1,.36,1) for layout, 90ms label cross-fade. Every     */
+/* animation and transition below is disabled under reduced-motion so it   */
+/* never pegs the GPU on a high-refresh display.                          */
+/* ---------------------------------------------------------------------- */
+
+/* The house pop: a small rise + fade for anything that enters the stage.
+   translateY 5px + scale settle, opacity finishing early (at 60%) so the
+   element is legible while still travelling — the reference's alive feel. */
+@keyframes melani-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.985);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* A plain fade for backdrops/overlays. */
+@keyframes melani-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Working glow: a faint breathing ring. Transform + opacity only (compositor
+   friendly), 2.6s period, and — critically — its play-state is idle-safe: the
+   ring element is only rendered while working, and the animation itself is
+   killed under reduced-motion. No idle repaint ever happens. */
+@keyframes melani-breathe {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.04);
+  }
+}
+
+/* Empty-state hero avatar idle bob (reference sand-onboarding-cast-bob):
+   gentle, transform-only, a ~3.4s alternating rise/fall. */
+@keyframes melani-bob {
+  from {
+    transform: translateY(-3px);
+  }
+  to {
+    transform: translateY(3px);
+  }
+}
+
+/* -- conversation open: the stage content rises into place ------------- */
+/* Both the person-shaped header and the empty-state hero pop when the
+   conversation mounts (160ms house-ease, per UI-SPEC §4). */
+.melani-chat-header {
+  animation: melani-pop 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.melani-hero {
+  animation: melani-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* -- working avatar: breathing glow ring ------------------------------- */
+.melani-avatar[data-status="working"] .melani-avatar__glow {
+  animation: melani-breathe 2.6s ease-in-out infinite;
+}
+
+/* -- empty-state hero avatar: idle bob --------------------------------- */
+/* Scoped to the lg hero avatar only; sidebar/header avatars never bob. */
+.melani-hero .melani-avatar[data-size="lg"] {
+  animation: melani-bob 3.4s ease-in-out infinite alternate;
+}
+
+/* -- sidebar collapse: labels cross-fade before the rail narrows ------- */
+/* The reference fades the row body/trailing out fast (90ms) as the sidebar
+   collapses, so text never lingers into the narrowing rail. Body + trailing
+   stay in the DOM (so the fade can run) and are hidden by opacity + width. */
+.melani-row__body,
+.melani-row__trailing {
+  transition:
+    opacity 0.09s ease,
+    width 0.12s ease;
+}
+
+.melani-sidebar[data-collapsed] .melani-row__body,
+.melani-sidebar[data-collapsed] .melani-row__trailing {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The section title/count fade on collapse the same way. */
+.melani-section__title,
+.melani-section__count {
+  transition: opacity 0.09s ease;
+}
+
+/* -- press feedback: rows and buttons dip on active -------------------- */
+/* The reference's --press-scale .98. Kept off layout (transform only). */
+.melani-row,
+.melani-newbtn,
+.melani-iconbtn,
+.melani-hire__submit,
+.melani-hire__cancel {
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.09s ease;
+}
+
+.melani-row:active,
+.melani-newbtn:active,
+.melani-iconbtn:active:not(:disabled),
+.melani-hire__submit:active:not(:disabled),
+.melani-hire__cancel:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* -- focus-visible rings on every interactive shell element ------------ */
+/* A single, consistent accent ring so keyboard users always see focus. */
+.melani-row:focus-visible,
+.melani-newbtn:focus-visible,
+.melani-iconbtn:focus-visible,
+.melani-search:focus-visible,
+.melani-section__head:focus-visible,
+.melani-hire__input:focus-visible,
+.melani-hire__submit:focus-visible,
+.melani-hire__cancel:focus-visible,
+.melani-offline__retry:focus-visible,
+.melani-offline__dismiss:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sand-accent) 60%, transparent);
+}
+
+/* -- hire dialog: 180ms house-ease enter, 120ms exit fade -------------- */
+.melani-hire__backdrop {
+  animation: melani-fade-in 0.12s ease both;
+}
+
+.melani-hire {
+  animation: melani-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The closing state (component keeps the node mounted for one exit beat). */
+.melani-hire__backdrop[data-closing] {
+  animation: melani-fade-in 0.12s ease reverse both;
+}
+
+.melani-hire__backdrop[data-closing] .melani-hire {
+  animation: melani-fade-in 0.12s ease reverse both;
+}
+
+/* -- reduced motion: turn ALL of the above off ------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .melani-chat-header,
+  .melani-hero,
+  .melani-hero .melani-avatar[data-size="lg"],
+  .melani-avatar[data-status="working"] .melani-avatar__glow,
+  .melani-hire__backdrop,
+  .melani-hire,
+  .melani-hire__backdrop[data-closing],
+  .melani-hire__backdrop[data-closing] .melani-hire {
+    animation: none;
+  }
+
+  .melani-row__body,
+  .melani-row__trailing,
+  .melani-section__title,
+  .melani-section__count,
+  .melani-row,
+  .melani-newbtn,
+  .melani-iconbtn,
+  .melani-hire__submit,
+  .melani-hire__cancel {
+    transition: none;
+  }
+
+  .melani-row:active,
+  .melani-newbtn:active,
+  .melani-iconbtn:active:not(:disabled),
+  .melani-hire__submit:active:not(:disabled),
+  .melani-hire__cancel:active:not(:disabled) {
+    transform: none;
   }
 }
