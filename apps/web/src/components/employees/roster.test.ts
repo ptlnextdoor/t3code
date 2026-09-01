@@ -116,4 +116,29 @@ describe("roster config (de-Aayu-fication)", () => {
       /duplicated/,
     );
   });
+
+  it("parseRoster accepts an optional host and preserves it", () => {
+    const withHost = parseRoster([
+      { id: "a", name: "A", role: "R", keywords: [], topics: [], host: "env-hetzner" },
+    ]);
+    assert.strictEqual(withHost[0]?.host, "env-hetzner");
+  });
+
+  it("parseRoster treats an absent host as local (undefined, backward compatible)", () => {
+    const noHost = parseRoster([{ id: "a", name: "A", role: "R", keywords: [], topics: [] }]);
+    assert.isUndefined(noHost[0]?.host);
+    // A pre-N3.9 config (no host field anywhere) round-trips unchanged.
+    assert.notProperty(noHost[0], "host");
+  });
+
+  it("parseRoster rejects a present-but-invalid host", () => {
+    assert.throws(
+      () => parseRoster([{ id: "a", name: "A", role: "R", keywords: [], topics: [], host: "" }]),
+      /host/,
+    );
+    assert.throws(
+      () => parseRoster([{ id: "a", name: "A", role: "R", keywords: [], topics: [], host: 3 }]),
+      /host/,
+    );
+  });
 });

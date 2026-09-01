@@ -37,6 +37,16 @@ export interface Employee {
    * Order matters: the first employee with a hit owns the item.
    */
   readonly keywords: ReadonlyArray<string>;
+  /**
+   * Which environment this employee's conversations open in. Absent means This
+   * Mac (the primary/local environment) — the only host that existed before
+   * N3.9, so an old roster.json without this field keeps opening threads
+   * locally. A value is an EnvironmentId naming a remote T3 server (a Hetzner
+   * box, a second machine) the client already knows how to connect to; the open
+   * path binds the thread to it instead of the primary. Validated as an opaque
+   * string at the parse boundary, never trusted to be reachable.
+   */
+  readonly host?: string;
 }
 
 /**
@@ -187,12 +197,20 @@ export function parseRoster(raw: unknown): ReadonlyArray<Employee> {
     if (typeof e.role !== "string" || e.role.length === 0) {
       throw new Error(`roster[${index}].role must be a non-empty string`);
     }
+    // `host` is optional and backward compatible: absent means This Mac. When
+    // present it must be a non-empty string (an environment id); an empty string
+    // is a malformed binding, not a valid "local", so reject it rather than
+    // silently treating it as local.
+    if (e.host !== undefined && (typeof e.host !== "string" || e.host.length === 0)) {
+      throw new Error(`roster[${index}].host must be a non-empty string when present`);
+    }
     return {
       id: e.id,
       keywords: strArray(e.keywords, "keywords"),
       name: e.name,
       role: e.role,
       topics: strArray(e.topics, "topics"),
+      ...(e.host !== undefined ? { host: e.host } : {}),
     };
   });
 }
