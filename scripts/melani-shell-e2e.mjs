@@ -10,6 +10,10 @@
  *   2. The people-sidebar renders the roster (>= the 7 staffed employees).
  *   3. Clicking a Melani employee row OPENS a conversation (composer visible),
  *      via the shared zero-config open path — never a "no project" dead end.
+ *   3b. The STAGE sheds t3code's coding-app chrome: the header shows the
+ *      employee name + role (not a project breadcrumb), NO "Initialize Git"
+ *      button is present, and the empty stage greets the person rather than
+ *      asking "What should we build in X?".
  *   4. Collapse -> the sidebar becomes the 88px avatar rail; expand -> back.
  *   5. Screenshots: expanded, collapsed, conversation-open, empty-state.
  *
@@ -227,6 +231,18 @@ async function main() {
       // -- 3. Row click opens a conversation ---------------------------
       console.log("\n== clicking a Melani employee row ==");
       const before = await evalJs(cdp, "location.href");
+      // Capture the clicked employee's NAME from its row aria-label ("Name.
+      // preview") so we can assert the stage header echoes the person, not a
+      // project breadcrumb.
+      const clickedName = await evalJs(
+        cdp,
+        `(() => {
+          const row = document.querySelector('[data-testid="melani-employee-row"]');
+          if (!row) return null;
+          const label = row.getAttribute('aria-label') || '';
+          return label.split('.')[0].trim() || null;
+        })()`,
+      );
       await evalJs(cdp, `document.querySelector('[data-testid="melani-employee-row"]').click()`);
       let open = { urlChanged: false, composer: false };
       for (let i = 0; i < 24; i++) {
@@ -245,6 +261,60 @@ async function main() {
         `row click OPENED a conversation (urlChanged=${open.urlChanged}, composer=${open.composer})`,
       );
       await screenshot(cdp, "conversation");
+
+      // -- 3b. The stage shows the PERSON, not coding-app chrome -------
+      console.log("\n== asserting the stage sheds coding-app chrome ==");
+      // Poll for the person-shaped header to mount (it depends on the
+      // employee<->conversation link being recorded at open time).
+      let stage = { header: false, name: null, role: false };
+      for (let i = 0; i < 20; i++) {
+        stage = await evalJs(
+          cdp,
+          `(() => {
+            const header = document.querySelector('[data-testid="melani-chat-header"]');
+            const nameEl = document.querySelector('[data-testid="melani-chat-header-name"]');
+            const roleEl = document.querySelector('[data-testid="melani-chat-header-role"]');
+            return {
+              header: !!header,
+              name: nameEl ? nameEl.textContent.trim() : null,
+              role: !!(roleEl && roleEl.textContent.trim().length > 0),
+            };
+          })()`,
+        );
+        if (stage.header && stage.name) break;
+        await sleep(300);
+      }
+      assert(stage.header, "stage renders the person-shaped chat header");
+      assert(
+        stage.name !== null && (clickedName === null || stage.name === clickedName),
+        `header shows the employee NAME (${stage.name}), not a breadcrumb`,
+      );
+      assert(stage.role, "header shows the employee's one-line role");
+
+      // No project breadcrumb and no git chrome inside the shell stage.
+      const chrome = await evalJs(
+        cdp,
+        `(() => {
+          const stageEl = document.querySelector('[data-testid="melani-stage"]');
+          const scope = stageEl || document;
+          const texts = Array.from(scope.querySelectorAll('button, a, [role="button"]'))
+            .map((el) => (el.textContent || '').trim());
+          const hasInitGit = texts.some((t) => /initialize git/i.test(t));
+          const hasAddAction = texts.some((t) => /^add action$/i.test(t));
+          const breadcrumb = scope.querySelector('[aria-label="Thread breadcrumb"]');
+          const bodyText = (scope.textContent || '');
+          const hasBuildInX = /what should we build in/i.test(bodyText);
+          return { hasInitGit, hasAddAction, breadcrumb: !!breadcrumb, hasBuildInX };
+        })()`,
+      );
+      assert(!chrome.hasInitGit, 'NO "Initialize Git" button in the Melani shell stage');
+      assert(!chrome.hasAddAction, 'NO "Add action" button in the Melani shell stage');
+      assert(!chrome.breadcrumb, "NO project/thread breadcrumb in the Melani shell stage");
+      assert(
+        !chrome.hasBuildInX,
+        'empty stage does NOT say "What should we build in X?" (person-shaped instead)',
+      );
+      await screenshot(cdp, "stage-header");
 
       // -- 4. Collapse / expand ----------------------------------------
       console.log("\n== collapsing and expanding the sidebar ==");

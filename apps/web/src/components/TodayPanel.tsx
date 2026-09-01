@@ -213,7 +213,11 @@ export function TodayPanel({
    *  employee's host environment (undefined = This Mac). Returns an outcome
    *  describing why it could not open (or null on success). Injected because
    *  thread-opening needs router context the panel must not depend on. */
-  onOpenItem?: (host: string | undefined, briefing: string) => void | Promise<PanelOpenOutcome>;
+  onOpenItem?: (
+    host: string | undefined,
+    briefing: string,
+    identity?: { id: string; name: string; role: string },
+  ) => void | Promise<PanelOpenOutcome>;
 } = {}) {
   const [payload, setPayload] = useState<TodayPayload | null>(null);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -273,6 +277,7 @@ export function TodayPanel({
       const outcome = await onOpenItem(
         employee.host,
         buildItemBriefing(employee, item.text, item.action),
+        { id: employee.id, name: employee.name, role: employee.role },
       );
       setNotice(outcome ?? null);
       return;

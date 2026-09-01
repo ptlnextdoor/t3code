@@ -2179,3 +2179,109 @@ select.melani-hire__input {
   opacity: 0.5;
   cursor: default;
 }
+
+/* --- stage: person-shaped chat header (UI-SPEC §2.5, §6 N3.1) --------- */
+
+/* Replaces t3code's project/git ChatHeader inside the Melani shell: a
+   34px persona, the employee name, a one-line role, and a small "Working"
+   badge during an active turn. No breadcrumb, no git, no "Add action". */
+.melani-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.melani-chat-header__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.melani-chat-header__name {
+  font-size: var(--sand-font-base);
+  font-weight: 600;
+  color: var(--sand-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.melani-chat-header__role {
+  font-size: var(--sand-font-sm);
+  color: var(--sand-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Small-caps working badge, per the reference header's small "Working". */
+.melani-chat-header__badge {
+  flex: 0 0 auto;
+  margin-inline-start: 4px;
+  padding: 2px 8px;
+  border-radius: var(--sand-radius-full);
+  font-size: var(--sand-font-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sand-green);
+  background: color-mix(in srgb, var(--sand-green) 16%, transparent);
+}
+
+/* --- stage: person-shaped empty state -------------------------------- */
+
+.melani-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 8px 16px;
+}
+
+.melani-hero__title {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--sand-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.melani-hero__role {
+  margin: 0;
+  max-width: 30rem;
+  font-size: var(--sand-font-base);
+  color: var(--sand-text-secondary);
+  line-height: 1.5;
+}
+
+.melani-hero__prompt {
+  margin: 2px 0 0;
+  font-size: var(--sand-font-base);
+  color: var(--sand-text-quaternary);
+}
+
+/* --- stage: de-emphasize the composer settings row (task 3) ----------
+   The model/access controls read like a coding toolbar. Inside the shell
+   they should read like quiet settings: muted until hovered/focused. The
+   send button and its states are untouched. Scoped to the shell stage so
+   classic surfaces keep their toolbar exactly as-is. */
+.melani-shell__stage [data-chat-composer-footer="true"] > div:first-child {
+  opacity: 0.62;
+  transition: opacity 0.12s ease;
+}
+
+.melani-shell__stage [data-chat-composer-footer="true"]:hover > div:first-child,
+.melani-shell__stage [data-chat-composer-footer="true"]:focus-within > div:first-child {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-chat-header__badge,
+  .melani-shell__stage [data-chat-composer-footer="true"] > div:first-child {
+    transition: none;
+  }
+}

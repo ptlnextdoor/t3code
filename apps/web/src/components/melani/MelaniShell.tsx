@@ -19,8 +19,13 @@ import { getLocalStorageItem } from "../../hooks/useLocalStorage";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { SetupGate } from "../setup/SetupGate";
 import { MelaniEmployeeOfflineNotice } from "./MelaniEmployeeOfflineNotice";
+import { MelaniShellProvider } from "./MelaniShellContext";
 import { MelaniSidebar } from "./MelaniSidebar";
 import { useRosterState } from "./useRosterState";
+
+// Stable so the context value's identity never churns: `insideMelaniShell` is
+// a constant for everything under this provider.
+const SHELL_CONTEXT_VALUE = { insideMelaniShell: true } as const;
 
 const WIDTH_KEY = "melani.sidebar.width";
 const COLLAPSED_KEY = "melani.sidebar.collapsed";
@@ -126,11 +131,13 @@ export function MelaniShell({ children }: { readonly children: ReactNode }) {
         )}
       </div>
       <div className="melani-shell__stage" data-testid="melani-stage">
-        {/* Overlay: catches a click on a remote-hosted employee whose server is
-            offline and shows a reconnect notice, above the stage content but
-            clear of the ChatHeader/DraftHero area. */}
-        <MelaniEmployeeOfflineNotice />
-        {children}
+        <MelaniShellProvider value={SHELL_CONTEXT_VALUE}>
+          {/* Overlay: catches a click on a remote-hosted employee whose server is
+              offline and shows a reconnect notice, above the stage content but
+              clear of the ChatHeader/DraftHero area. */}
+          <MelaniEmployeeOfflineNotice />
+          {children}
+        </MelaniShellProvider>
       </div>
       {/* Mounts the first-run wizard when the instance is unset up; renders
           nothing once ready. The empty roster state points here. */}

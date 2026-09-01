@@ -37,6 +37,10 @@ import { createEnsureWorkspaceProject, type EnsureCreateInput } from "./ensureWo
 import { resolveEmployeeHost, type EnvironmentLookupEntry } from "./hostBinding";
 import type { PanelOpenOutcome } from "./panelOutcome";
 import type { EmployeeSummary } from "./summarize";
+import {
+  recordEmployeeConversation,
+  type EmployeeIdentity,
+} from "../melani/employeeConversationLink";
 
 /**
  * A stable ensure-workspace-project function per environment, self-provisioning
@@ -123,6 +127,7 @@ function useEnsureProjectRef() {
 export function useOpenBriefingConversation(): (
   host: string | undefined,
   briefing: string,
+  identity?: EmployeeIdentity,
 ) => Promise<PanelOpenOutcome> {
   const { handleNewThread } = useHandleNewThread();
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
@@ -147,7 +152,11 @@ export function useOpenBriefingConversation(): (
   primaryRef.current = primaryEnvironmentId;
 
   return useCallback(
-    async (host: string | undefined, briefing: string): Promise<PanelOpenOutcome> => {
+    async (
+      host: string | undefined,
+      briefing: string,
+      identity?: EmployeeIdentity,
+    ): Promise<PanelOpenOutcome> => {
       const resolution = resolveEmployeeHost({
         host,
         primaryEnvironmentId: primaryRef.current,
@@ -173,6 +182,15 @@ export function useOpenBriefingConversation(): (
       const opened = await handleNewThread(projectRef);
       if (!opened?.draftId) return { reason: "Could not open a conversation." };
       setPrompt(opened.draftId, briefing);
+      // The one place both the employee's identity and the conversation's ids
+      // are in hand: record the join so the stage can render a person-shaped
+      // header + empty state (UI-SPEC §6 N3.1) instead of project/git chrome.
+      if (identity) {
+        recordEmployeeConversation(
+          { draftId: opened.draftId, threadId: opened.threadId },
+          identity,
+        );
+      }
       return null;
     },
     [ensureProjectRef, handleNewThread, setPrompt],
@@ -188,7 +206,12 @@ export function useOpenBriefingConversation(): (
 export function useEmployeeConversation(): (summary: EmployeeSummary) => Promise<PanelOpenOutcome> {
   const openBriefing = useOpenBriefingConversation();
   return useCallback(
-    (summary: EmployeeSummary) => openBriefing(summary.employee.host, buildBriefing(summary)),
+    (summary: EmployeeSummary) =>
+      openBriefing(summary.employee.host, buildBriefing(summary), {
+        id: summary.employee.id,
+        name: summary.employee.name,
+        role: summary.employee.role,
+      }),
     [openBriefing],
   );
 }
