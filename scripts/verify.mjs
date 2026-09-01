@@ -60,6 +60,22 @@ const gates = [
         },
       ]
     : []),
+  // Opt-in hire+host gate (N3.9): drives POST /api/roster/employee against a
+  // running server whose T3CODE_ROSTER_JSON points at a TEMP file, asserting the
+  // hire writes to disk, a duplicate is refused, and the host round-trips. Runs
+  // only when HIRE_HOST_BASE names a server, so the default `verify` stays
+  // runnable with no server present. Set HIRE_HOST_E2E_BROWSER=1 to add the UI
+  // pass (needs Chrome + the web app).
+  ...(process.env.HIRE_HOST_BASE
+    ? [
+        {
+          name: "hire-host",
+          label: `node scripts/hire-host-e2e.mjs ${process.env.HIRE_HOST_BASE}`,
+          cmd: "node",
+          args: ["scripts/hire-host-e2e.mjs", process.env.HIRE_HOST_BASE],
+        },
+      ]
+    : []),
 ];
 
 /** Run one command, inheriting stdio so its output streams live. */
