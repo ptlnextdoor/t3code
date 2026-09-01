@@ -43,6 +43,19 @@ function resolveShellRoster(rosterJson: string | null | undefined) {
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
+/**
+ * A hire (or any roster mutation) should show up immediately, not on the next
+ * five-minute tick. The dialog dispatches this after a successful write and the
+ * hook re-fetches the TODAY payload, so the new employee appears in the sidebar
+ * at once. Named event rather than a shared query client because the roster
+ * fetch here is a plain effect, not a tanstack query.
+ */
+export const ROSTER_REFRESH_EVENT = "t3code:roster-refresh";
+
+export function refreshRoster(): void {
+  window.dispatchEvent(new Event(ROSTER_REFRESH_EVENT));
+}
+
 export type RosterPhase = "loading" | "ready" | "error";
 
 export interface RosterState {
@@ -96,9 +109,15 @@ export function useRosterState(): RosterState {
     };
     void load();
     const timer = setInterval(load, REFRESH_INTERVAL_MS);
+    // Re-fetch on demand after a hire, so a new employee lands immediately.
+    const onRefresh = () => {
+      void load();
+    };
+    window.addEventListener(ROSTER_REFRESH_EVENT, onRefresh);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      window.removeEventListener(ROSTER_REFRESH_EVENT, onRefresh);
     };
   }, []);
 

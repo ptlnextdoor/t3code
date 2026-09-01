@@ -1899,3 +1899,283 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   padding: 0 14px;
   justify-content: center;
 }
+
+/* --- remote-host indicator (N3.9) ------------------------------------- */
+
+/* A tiny cloud glyph after the name marks an employee whose conversations
+   open on a remote host. One signal only: absent for This-Mac employees, so
+   the glyph itself carries the "runs elsewhere" meaning. */
+.melani-row__host {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--sand-text-quaternary);
+  vertical-align: baseline;
+  cursor: default;
+}
+
+.melani-row:hover .melani-row__host {
+  color: var(--sand-text-tertiary);
+}
+
+/* --- offline notice (N3.9) -------------------------------------------- */
+
+/* A passive sand banner pinned to the top of the stage when a click lands on a
+   remote-hosted employee whose server is offline. Never a modal: it explains
+   and offers a reconnect without blocking the stage below it. */
+.melani-offline {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(560px, calc(100% - 32px));
+  padding: 10px 12px 10px 14px;
+  border-radius: var(--sand-radius-panel, 12px);
+  background: color-mix(in srgb, var(--sand-yellow) 12%, var(--sand-chrome));
+  border: 1px solid color-mix(in srgb, var(--sand-yellow) 32%, transparent);
+  box-shadow: var(--sand-shadow-raised, 0 6px 20px rgb(0 0 0 / 18%));
+  animation: sand-rise 0.18s var(--sand-ease-out-quint, ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melani-offline {
+    animation: none;
+  }
+}
+
+.melani-offline__body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.melani-offline__glyph {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.melani-offline__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.melani-offline__title {
+  font-size: var(--sand-font-sm);
+  font-weight: 600;
+  color: var(--sand-text-primary);
+}
+
+.melani-offline__detail {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.melani-offline__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.melani-offline__retry {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--sand-radius-row, 8px);
+  background: var(--sand-text-primary);
+  color: var(--sand-chrome);
+  font-size: var(--sand-font-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.melani-offline__retry:hover {
+  opacity: 0.85;
+}
+
+.melani-offline__dismiss {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--sand-radius-full);
+  background: transparent;
+  color: var(--sand-text-quaternary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.melani-offline__dismiss:hover {
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-secondary);
+}
+
+/* --- hire dialog (N3.9) ----------------------------------------------- */
+
+.melani-hire__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--sand-shadow-scrim, #000) 42%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.melani-hire {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(420px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: var(--sand-radius-panel, 14px);
+  background: var(--sand-chrome);
+  border: 1px solid var(--sand-border, rgb(0 0 0 / 8%));
+  box-shadow: var(--sand-shadow-raised, 0 16px 48px rgb(0 0 0 / 28%));
+}
+
+.melani-hire__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.melani-hire__title {
+  font-size: var(--sand-font-lg, 16px);
+  font-weight: 600;
+  color: var(--sand-text-primary);
+}
+
+.melani-hire__meta {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-text-quaternary);
+  font-variant-numeric: tabular-nums;
+}
+
+.melani-hire__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.melani-hire__label {
+  font-size: var(--sand-font-xs);
+  font-weight: 500;
+  color: var(--sand-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.melani-hire__hint {
+  font-weight: 400;
+  color: var(--sand-text-quaternary);
+  letter-spacing: 0;
+}
+
+.melani-hire__input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--sand-radius-row, 8px);
+  border: 1px solid var(--sand-border, rgb(0 0 0 / 10%));
+  background: var(--sand-fill-tertiary);
+  color: var(--sand-text-primary);
+  font-size: var(--sand-font-sm);
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.melani-hire__input:focus {
+  border-color: color-mix(in srgb, var(--sand-text-primary) 40%, transparent);
+}
+
+select.melani-hire__input {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.melani-hire__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.melani-hire__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--sand-radius-full);
+  background: var(--sand-fill-secondary);
+  color: var(--sand-text-secondary);
+  font-size: var(--sand-font-xs);
+}
+
+.melani-hire__error {
+  font-size: var(--sand-font-xs);
+  color: var(--sand-red, #c0392b);
+  line-height: 1.4;
+}
+
+.melani-hire__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.melani-hire__cancel,
+.melani-hire__submit {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--sand-radius-row, 8px);
+  font-size: var(--sand-font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    opacity 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.melani-hire__cancel {
+  background: transparent;
+  border-color: var(--sand-border, rgb(0 0 0 / 12%));
+  color: var(--sand-text-secondary);
+}
+
+.melani-hire__cancel:hover {
+  background: var(--sand-fill-tertiary);
+}
+
+.melani-hire__submit {
+  background: var(--sand-text-primary);
+  color: var(--sand-chrome);
+}
+
+.melani-hire__submit:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.melani-hire__submit:disabled,
+.melani-hire__cancel:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
