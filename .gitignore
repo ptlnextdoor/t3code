@@ -41,3 +41,6 @@ node_modules/
 
 # Design harness build output (opt-in, never shipped)
 apps/web/dist-harness/
+
+# Melani e2e screenshots (local artifacts)
+.melani-shots/

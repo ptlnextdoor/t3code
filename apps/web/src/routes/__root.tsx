@@ -17,6 +17,8 @@ import {
   TeamPanelConnected,
   TodayPanelConnected,
 } from "../components/employees/TeamPanelConnected";
+import { MelaniShell } from "../components/melani/MelaniShell";
+import { useMelaniShellEnabled } from "../components/melani/useMelaniShellEnabled";
 import { SetupGate } from "../components/setup/SetupGate";
 import { ConnectionBar } from "../components/connections/ConnectionBar";
 import { ConnectionCards } from "../components/connections/ConnectionCards";
@@ -99,6 +101,7 @@ function RootRouteView() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const { authGateState } = Route.useRouteContext();
   const primaryEnvironmentAuthenticated = authGateState.status === "authenticated";
+  const melaniShellEnabled = useMelaniShellEnabled();
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -127,7 +130,19 @@ function RootRouteView() {
     );
   }
 
-  const appShell = (
+  // Settings routes keep the classic layout: the settings nav lives inside
+  // AppSidebarLayout, so Melani never owns them. Everywhere else, Melani is the
+  // front door (UI-SPEC §6 N3.1) unless the owner has toggled it off.
+  const isOnSettings = pathname === "/settings" || pathname.startsWith("/settings/");
+  const useMelani = melaniShellEnabled && !isOnSettings;
+
+  const appShell = useMelani ? (
+    <CommandPalette>
+      <MelaniShell>
+        <Outlet />
+      </MelaniShell>
+    </CommandPalette>
+  ) : (
     <CommandPalette>
       <AppSidebarLayout>
         <div className="sand-rail">
