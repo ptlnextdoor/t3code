@@ -1758,30 +1758,53 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
   height: var(--melani-avatar-size, 34px);
   border-radius: var(--sand-radius-full);
   flex-shrink: 0;
-  /* Deterministic hue from the employee id (persona.ts). Translucent fill over
-     base, per the sand color-mix rule — never a flat hex. */
-  background: color-mix(
-    in srgb,
-    hsl(var(--melani-avatar-hue, 210) 60% 55%) 26%,
-    var(--sand-chrome)
-  );
-  color: hsl(var(--melani-avatar-hue, 210) 70% 82%);
-  border: 1px solid color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 60% 55%) 40%, transparent);
+  /* N3.2: a soft two-stop gradient derived from the employee-id hue instead of
+     a flat mix — a lighter top edge into a deeper base, so the disc reads as a
+     rounded object catching light from above. Both stops stay translucent over
+     chrome per the sand color-mix rule; the hue is the only per-employee input. */
+  background:
+    radial-gradient(
+      120% 120% at 50% 22%,
+      color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 62% 62%) 34%, var(--sand-chrome)) 0%,
+      color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 58% 48%) 24%, var(--sand-chrome)) 100%
+    );
+  color: hsl(var(--melani-avatar-hue, 210) 70% 84%);
+  border: 1px solid color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 60% 55%) 38%, transparent);
+  /* The inner top-light (DESIGN.md): an inset white sheen at the crown plus a
+     faint drop, the physical-not-flat trick. Pure box-shadow, no repaint. */
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, #ffffff 16%, transparent),
+    inset 0 0 6px 0 color-mix(in srgb, hsl(var(--melani-avatar-hue, 210) 70% 70%) 10%, transparent);
 }
 
 .melani-avatar__glyph {
+  position: relative;
+  z-index: 1;
   font-size: calc(var(--melani-avatar-size, 34px) * 0.42);
   font-weight: 600;
   line-height: 1;
   user-select: none;
 }
 
+/* Breathing glow ring, only mounted while working. The keyframes and the
+   reduced-motion gate live in the N3.2 motion block below; this is just its
+   shape and hue. */
+.melani-avatar__glow {
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--sand-radius-full);
+  pointer-events: none;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--sand-green) 55%, transparent);
+}
+
 .melani-avatar__dot {
   position: absolute;
   right: -1px;
   bottom: -1px;
-  width: 10px;
-  height: 10px;
+  width: calc(var(--melani-avatar-size, 34px) * 0.29);
+  min-width: 8px;
+  max-width: 11px;
+  aspect-ratio: 1;
   border-radius: var(--sand-radius-full);
   border: 2px solid var(--sand-chrome);
   background: var(--sand-text-quaternary);
@@ -1793,6 +1816,16 @@ body:has(.sand-rail) [data-slot="toast-viewport"] {
 
 .melani-avatar[data-status="attention"] .melani-avatar__dot {
   background: var(--sand-yellow);
+}
+
+/* The xs size is a bare identity chip (collapsed rows, dense lists): no room
+   for a corner-dot border, so shrink it and drop the ring inset. */
+.melani-avatar[data-size="xs"] .melani-avatar__dot {
+  border-width: 1.5px;
+}
+
+.melani-avatar[data-size="xs"] .melani-avatar__glow {
+  inset: -2px;
 }
 
 /* --- roster states (loading / empty / error) -------------------------- */
