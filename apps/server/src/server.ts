@@ -24,7 +24,11 @@ import { fixPath } from "./os-jank.ts";
 import { websocketRpcRouteLayer } from "./ws.ts";
 import { todayRouteLayer } from "./today/TodayRoute.ts";
 import { onboardBrainDumpRouteLayer, onboardCommitRouteLayer } from "./onboarding/OnboardRoute.ts";
-import { rosterEmployeeRouteLayer } from "./roster/RosterRoute.ts";
+import {
+  rosterEmployeeRouteLayer,
+  rosterEmployeeEditRouteLayer,
+  rosterEmployeeDeleteRouteLayer,
+} from "./roster/RosterRoute.ts";
 import { setupStateRouteLayer, setupProfileRouteLayer } from "./setup/SetupRoute.ts";
 import {
   connectionDraftsRouteLayer,
@@ -483,6 +487,8 @@ export const makeRoutesLayer = Layer.mergeAll(
     onboardBrainDumpRouteLayer,
     onboardCommitRouteLayer,
     rosterEmployeeRouteLayer,
+    rosterEmployeeEditRouteLayer,
+    rosterEmployeeDeleteRouteLayer,
     connectionsRouteLayer,
     connectionConnectRouteLayer,
     connectionDraftsRouteLayer,

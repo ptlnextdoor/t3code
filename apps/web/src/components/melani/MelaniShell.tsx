@@ -19,6 +19,7 @@ import { getLocalStorageItem } from "../../hooks/useLocalStorage";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { SetupGate } from "../setup/SetupGate";
 import { MelaniEmployeeOfflineNotice } from "./MelaniEmployeeOfflineNotice";
+import { MelaniSettingsOverlay } from "./MelaniSettingsOverlay";
 import { MelaniShellProvider } from "./MelaniShellContext";
 import { MelaniSidebar } from "./MelaniSidebar";
 import { useRosterState } from "./useRosterState";
@@ -142,6 +143,9 @@ export function MelaniShell({ children }: { readonly children: ReactNode }) {
       {/* Mounts the first-run wizard when the instance is unset up; renders
           nothing once ready. The empty roster state points here. */}
       <SetupGate />
+      {/* The settings overlay floats over the whole shell (people-list stays
+          mounted behind it). Opened by the sidebar gear or Cmd+,. */}
+      <MelaniSettingsOverlay roster={roster} />
     </div>
   );
 }

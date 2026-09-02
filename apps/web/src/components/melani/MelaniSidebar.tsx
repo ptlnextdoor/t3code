@@ -20,6 +20,7 @@ import * as Schema from "effect/Schema";
 import { useCallback, useState } from "react";
 
 import { openCommandPalette } from "../../commandPaletteBus";
+import { openMelaniSettings } from "./settingsOverlayBus";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { useEnvironments } from "../../state/environments";
 import type { EmployeeSummary } from "../employees/summarize";
@@ -331,6 +332,25 @@ export function MelaniSidebar({
           onToggleSection={toggleSection}
           onOpen={onOpen}
         />
+      </div>
+
+      <div className="melani-sidebar__footer">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                className="melani-iconbtn melani-sidebar__settings"
+                aria-label="Settings"
+                data-testid="melani-settings-gear"
+                onClick={() => openMelaniSettings()}
+              />
+            }
+          >
+            ⚙
+          </TooltipTrigger>
+          <TooltipPopup side={collapsed ? "right" : "top"}>Settings</TooltipPopup>
+        </Tooltip>
       </div>
 
       <NewEmployeeDialog
