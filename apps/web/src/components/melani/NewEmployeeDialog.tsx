@@ -62,6 +62,27 @@ export function NewEmployeeDialog({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  // Keep the overlay mounted for one 120ms exit beat after `open` flips false so
+  // the closing fade (sand.css [data-closing]) can run before it unmounts. Under
+  // reduced-motion the CSS animation is `none`, so the fallback timer still
+  // unmounts it promptly.
+  const [rendered, setRendered] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      setClosing(false);
+      return;
+    }
+    if (!rendered) return;
+    setClosing(true);
+    const timer = setTimeout(() => {
+      setRendered(false);
+      setClosing(false);
+    }, 130);
+    return () => clearTimeout(timer);
+  }, [open, rendered]);
 
   // Reset the form each time the dialog opens so a prior draft never leaks in.
   useEffect(() => {
@@ -120,16 +141,17 @@ export function NewEmployeeDialog({
     }
   }, [name, role, keywords, host, existingIds, onOpenChange]);
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   return (
     <div
       className="melani-hire__backdrop"
       data-testid="melani-hire-dialog"
+      data-closing={closing ? "" : undefined}
       onClick={() => onOpenChange(false)}
     >
       <div
-        className="melani-hire sand-rise"
+        className="melani-hire"
         role="dialog"
         aria-modal="true"
         aria-label="Hire a new employee"

@@ -70,33 +70,37 @@ function EmployeeRow({
       onClick={() => onOpen(summary)}
     >
       <MelaniAvatar id={employee.id} name={employee.name} status={status} />
-      {collapsed ? null : (
-        <>
-          <span className="melani-row__body">
-            <span className="melani-row__name">
-              {employee.name}
-              {hostLabel ? (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <span
-                        className="melani-row__host"
-                        data-testid="melani-row-host"
-                        aria-hidden="true"
-                      />
-                    }
-                  >
-                    ☁
-                  </TooltipTrigger>
-                  <TooltipPopup side="top">Runs on {hostLabel}</TooltipPopup>
-                </Tooltip>
-              ) : null}
-            </span>
-            <span className="melani-row__preview">{preview}</span>
-          </span>
-          {trailing ? <span className="melani-row__trailing">{trailing}</span> : null}
-        </>
-      )}
+      {/* Body + trailing stay mounted even when collapsed so their labels can
+          cross-fade out (90ms) before the rail narrows (240ms width settle),
+          the reference's collapse feel. CSS hides them under [data-collapsed];
+          aria-hidden keeps them out of the a11y tree in the rail. */}
+      <span className="melani-row__body" aria-hidden={collapsed ? "true" : undefined}>
+        <span className="melani-row__name">
+          {employee.name}
+          {hostLabel ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span
+                    className="melani-row__host"
+                    data-testid="melani-row-host"
+                    aria-hidden="true"
+                  />
+                }
+              >
+                ☁
+              </TooltipTrigger>
+              <TooltipPopup side="top">Runs on {hostLabel}</TooltipPopup>
+            </Tooltip>
+          ) : null}
+        </span>
+        <span className="melani-row__preview">{preview}</span>
+      </span>
+      {trailing ? (
+        <span className="melani-row__trailing" aria-hidden={collapsed ? "true" : undefined}>
+          {trailing}
+        </span>
+      ) : null}
     </button>
   );
 }
